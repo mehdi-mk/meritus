@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="sidebar-content">
+                <h2>Dashboard</h2>
+                <nav>
+                    <ul>
+                        <li><a href="#" data-content="Home">Home</a></li>
+                        <li><a href="#" data-content="Activity">Activity</a></li>
+                        <li><a href="#" data-content="Profile">Profile</a></li>
+                        <li><a href="#" data-content="Account">Account</a></li>
+                        <li><a href="#" data-content="Settings">Settings</a></li>
+                        <li><a href="#" data-content="Help">Help</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="logout-section">
+                <a href="{{ url_for('logout') }}">Log Out</a>
+            </div>
+        </div>
+        <div class="main-content">
+            <header>
+                <h1>Welcome, {{ current_user.email.split('@')[0] }}!</h1>
+            </header>
+            <section id="content-area">
+                <!-- Content will be loaded here -->
+                <h1>Home</h1>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Experience -->
+    <div id="experience-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Add New Experience</h2>
+            <form id="experience-form">
+                <div class="form-group">
+                    <label for="position-title">Position Title</label>
+                    <input type="text" id="position-title" name="position-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="employer">Employer</label>
+                    <input type="text" id="employer" name="employer" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="country">Country</label>
+                        <input type="text" id="country" name="country">
+                    </div>
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" id="city" name="city">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="month" id="start-date" name="start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">End Date</label>
+                        <input type="month" id="end-date" name="end-date">
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="present-checkbox" name="present">
+                    <label for="present-checkbox">I am currently working in this role</label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employment-type">Employment Type</label>
+                        <select id="employment-type" name="employment-type">
+                            <option value="Full-Time">Full-Time</option>
+                            <option value="Part-Time">Part-Time</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="employment-arrangement">Employment Arrangement</label>
+                        <select id="employment-arrangement" name="employment-arrangement">
+                            <option value="On-Site">On-Site</option>
+                            <option value="Hybrid">Hybrid</option>
+                            <option value="Fully Remote">Fully Remote</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.sidebar nav a');
+            const contentArea = document.getElementById('content-area');
+            const experienceModal = document.getElementById('experience-modal');
+
+            // Function to load profile content
+            function loadProfileContent() {
+                contentArea.innerHTML = `
+                    <h1>Profile</h1>
+                    <div class="tile">
+                        <div class="tile-header">
+                            <h3>Experience</h3>
+                            <button class="toggle-btn">+</button>
+                        </div>
+                        <div class="tile-content">
+                            <button class="add-btn" data-modal="experience-modal">Add Experience</button>
+                        </div>
+                    </div>
+                    <div class="tile">
+                        <div class="tile-header">
+                            <h3>Certificates</h3>
+                            <button class="toggle-btn">+</button>
+                        </div>
+                        <div class="tile-content">
+                            <button class="add-btn">Add Certificate</button>
+                        </div>
+                    </div>
+                    <div class="tile">
+                        <div class="tile-header">
+                            <h3>Degrees</h3>
+                            <button class="toggle-btn">+</button>
+                        </div>
+                        <div class="tile-content">
+                            <button class="add-btn">Add Degree</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Sidebar navigation
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const contentName = this.getAttribute('data-content');
+                    if (contentName === 'Profile') {
+                        loadProfileContent();
+                    } else {
+                        contentArea.innerHTML = `<h1>${contentName}</h1>`;
+                    }
+                });
+            });
+
+            // Universal event listener for dynamic content
+            contentArea.addEventListener('click', function(event) {
+                const header = event.target.closest('.tile-header');
+                if (header) {
+                    const tile = header.closest('.tile');
+                    const button = header.querySelector('.toggle-btn');
+                    tile.classList.toggle('expanded');
+                    button.textContent = tile.classList.contains('expanded') ? '-' : '+';
+                }
+
+                if (event.target.classList.contains('add-btn')) {
+                    const modalId = event.target.getAttribute('data-modal');
+                    if (modalId) {
+                        document.getElementById(modalId).classList.add('visible');
+                    }
+                }
+            });
+
+            // Modal closing logic
+            function closeModal(modal) {
+                modal.classList.remove('visible');
+            }
+
+            if (experienceModal) {
+                experienceModal.addEventListener('click', function(event) {
+                    if (event.target === this || event.target.classList.contains('modal-close-btn') || event.target.classList.contains('modal-cancel-btn')) {
+                        closeModal(this);
+                    }
+                });
+
+                const presentCheckbox = experienceModal.querySelector('#present-checkbox');
+                const endDateInput = experienceModal.querySelector('#end-date');
+                presentCheckbox.addEventListener('change', function() {
+                    endDateInput.disabled = this.checked;
+                    if (this.checked) {
+                        endDateInput.value = '';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
