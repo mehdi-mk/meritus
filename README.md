@@ -13,11 +13,16 @@ python -m smtpd -n -c DebuggingServer localhost:8025
 ```
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 ```
+    
     - On Windows (Command Prompt):
+
 ```
 set DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 ```
+
 - Install the PostgreSQL driver for Python:
+
 ```
 pip install psycopg2-binary
 ```
+
