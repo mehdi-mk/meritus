@@ -1,3 +1,4 @@
 .idea/
 .instance/
 .DS_Store
+.env

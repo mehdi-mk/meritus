@@ -17,7 +17,7 @@ body, html {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* This is key to push the logout button to the bottom */
+    justify-content: space-between;
 }
 
 .sidebar h2 {
@@ -49,7 +49,7 @@ body, html {
     display: block;
     padding: 10px 20px;
     border-radius: 5px;
-    background-color: #d9534f; /* A reddish color to distinguish the logout button */
+    background-color: #d9534f;
     text-align: center;
 }
 
@@ -69,24 +69,13 @@ body, html {
     margin-bottom: 20px;
 }
 
-.main-content header h1 {
-    margin: 0;
-    font-size: 2em;
-}
-
 #content-area h1 {
     font-size: 2.5em;
     font-weight: bold;
     color: #333;
+    margin-bottom: 20px;
 }
 
-#content-area h1 {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #333;
-}
-
-/* New Tile Styles */
 .tile {
     background-color: white;
     border-radius: 8px;
@@ -127,13 +116,13 @@ body, html {
     max-height: 0;
     overflow: hidden;
     padding: 0 20px;
-    transition: max-height 0.1s ease-out, padding 0.1s ease-out;
+    transition: max-height 0.2s ease-out, padding 0.2s ease-out;
 }
 
 .tile.expanded .tile-content {
-    max-height: 500px; /* Adjust as needed */
+    max-height: 1000px;
     padding: 15px 20px;
-    transition: max-height 0.2s ease-in, padding 0.2s ease-in;
+    transition: max-height 0.3s ease-in, padding 0.3s ease-in;
 }
 
 .add-btn {
@@ -144,13 +133,14 @@ body, html {
     color: #007bff;
     cursor: pointer;
     text-decoration: none;
+    margin-top: 10px;
+    display: inline-block;
 }
 
 .add-btn:hover {
     text-decoration: underline;
 }
 
-/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -165,6 +155,7 @@ body, html {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow-y: auto;
 }
 
 .modal-overlay.visible {
@@ -182,6 +173,7 @@ body, html {
     position: relative;
     transform: translateY(-20px);
     transition: transform 0.3s ease;
+    margin: 20px 0;
 }
 
 .modal-overlay.visible .modal-content {
@@ -206,72 +198,61 @@ body, html {
     color: #333;
 }
 
-/* Form Styles */
-#experience-form .form-group {
-    margin-bottom: 15px;
-}
+.modal-form .form-group { margin-bottom: 15px; }
+.modal-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+.modal-form input[type="text"],
+.modal-form input[type="month"],
+.modal-form select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.form-row { display: flex; gap: 20px; }
+.form-row .form-group { flex: 1; }
+.checkbox-group { display: flex; align-items: center; }
+.checkbox-group input { margin-right: 10px; }
+.checkbox-group label { margin-bottom: 0; font-weight: normal; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
 
-#experience-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-}
+.btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+.btn-primary { background-color: #007bff; color: white; }
+.btn-secondary { background-color: #6c757d; color: white; }
+.btn-danger { background-color: #d9534f; color: white; }
+.btn-danger:hover { background-color: #c9302c; }
 
-#experience-form input[type="text"],
-#experience-form input[type="month"],
-#experience-form select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* Important for padding */
-}
-
-.form-row {
+.profile-item {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 15px 0;
+    margin-bottom: 10px;
     display: flex;
-    gap: 20px;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
 }
+.profile-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 5px; }
 
-.form-row .form-group {
-    flex: 1;
-}
+.item-details { flex-grow: 1; }
+.item-details h4 { margin: 0 0 5px 0; font-size: 1.1em; color: #333; }
+.item-details p { margin: 0 0 4px 0; font-size: 0.95em; color: #555; }
+.item-details .item-meta { font-size: 0.85em; color: #777; }
+.item-details a { color: #007bff; text-decoration: none; }
+.item-details a:hover { text-decoration: underline; }
 
-.checkbox-group {
+.item-actions {
     display: flex;
     align-items: center;
+    gap: 8px;
 }
 
-.checkbox-group input {
-    margin-right: 10px;
-}
-
-.checkbox-group label {
-    margin-bottom: 0;
-    font-weight: normal;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-.btn {
-    padding: 10px 20px;
+.edit-item-btn, .remove-item-btn {
+    background: none;
     border: none;
-    border-radius: 5px;
+    color: #ccc;
+    font-size: 1.5rem;
+    font-weight: bold;
     cursor: pointer;
-    font-size: 1em;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s ease-in-out;
 }
 
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-}
+.edit-item-btn:hover { color: #007bff; }
+.remove-item-btn:hover { color: #d9534f; }
 
-.btn-secondary {
-    background-color: #6c757d;
-    color: white;
-}
+#confirm-remove-modal .modal-content { max-width: 450px; }

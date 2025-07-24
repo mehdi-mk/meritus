@@ -31,168 +31,248 @@
                 <h1>Welcome, {{ current_user.email.split('@')[0] }}!</h1>
             </header>
             <section id="content-area">
-                <!-- Content will be loaded here -->
                 <h1>Home</h1>
             </section>
         </div>
     </div>
 
-    <!-- Modal for Adding Experience -->
+    <!-- Modals (re-used for add/edit) -->
     <div id="experience-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-btn">&times;</button>
-            <h2>Add New Experience</h2>
-            <form id="experience-form">
-                <div class="form-group">
-                    <label for="position-title">Position Title</label>
-                    <input type="text" id="position-title" name="position-title" required>
-                </div>
-                <div class="form-group">
-                    <label for="employer">Employer</label>
-                    <input type="text" id="employer" name="employer" required>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="country">Country</label>
-                        <input type="text" id="country" name="country">
-                    </div>
-                    <div class="form-group">
-                        <label for="city">City</label>
-                        <input type="text" id="city" name="city">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="start-date">Start Date</label>
-                        <input type="month" id="start-date" name="start-date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="end-date">End Date</label>
-                        <input type="month" id="end-date" name="end-date">
-                    </div>
-                </div>
-                <div class="form-group checkbox-group">
-                    <input type="checkbox" id="present-checkbox" name="present">
-                    <label for="present-checkbox">I am currently working in this role</label>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="employment-type">Employment Type</label>
-                        <select id="employment-type" name="employment-type">
-                            <option value="Full-Time">Full-Time</option>
-                            <option value="Part-Time">Part-Time</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="employment-arrangement">Employment Arrangement</label>
-                        <select id="employment-arrangement" name="employment-arrangement">
-                            <option value="On-Site">On-Site</option>
-                            <option value="Hybrid">Hybrid</option>
-                            <option value="Fully Remote">Fully Remote</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
-                </div>
+            <h2 class="modal-title">Add New Experience</h2>
+            <form id="experience-form" class="modal-form" data-type="experience">
+                <input type="hidden" name="id">
+                <div class="form-group"><label for="position-title">Position Title</label><input type="text" id="position-title" name="position_title" required></div>
+                <div class="form-group"><label for="employer">Employer</label><input type="text" id="employer" name="employer" required></div>
+                <div class="form-row"><div class="form-group"><label for="country">Country</label><input type="text" id="country" name="country"></div><div class="form-group"><label for="city">City</label><input type="text" id="city" name="city"></div></div>
+                <div class="form-row"><div class="form-group"><label for="start-date">Start Date</label><input type="month" id="start-date" name="start_date" required></div><div class="form-group"><label for="end-date">End Date</label><input type="month" id="end-date" name="end_date"></div></div>
+                <div class="form-group checkbox-group"><input type="checkbox" id="present-checkbox" name="is_present"><label for="present-checkbox">I am currently working in this role</label></div>
+                <div class="form-row"><div class="form-group"><label for="employment-type">Employment Type</label><select id="employment-type" name="employment_type"><option value="Full-Time">Full-Time</option><option value="Part-Time">Part-Time</option></select></div><div class="form-group"><label for="employment-arrangement">Employment Arrangement</label><select id="employment-arrangement" name="employment_arrangement"><option value="On-Site">On-Site</option><option value="Hybrid">Hybrid</option><option value="Fully Remote">Fully Remote</option></select></div></div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button></div>
             </form>
         </div>
     </div>
 
+    <div id="certificate-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2 class="modal-title">Add New Certificate</h2>
+            <form id="certificate-form" class="modal-form" data-type="certificate">
+                <input type="hidden" name="id">
+                <div class="form-group"><label for="cert-title">Title</label><input type="text" id="cert-title" name="title" required></div>
+                <div class="form-group"><label for="cert-issuer">Issuer</label><input type="text" id="cert-issuer" name="issuer" required></div>
+                <div class="form-row"><div class="form-group"><label for="cert-issue-date">Issue Date</label><input type="month" id="cert-issue-date" name="issue_date" required></div><div class="form-group"><label for="cert-expiry-date">Expiry Date</label><input type="month" id="cert-expiry-date" name="expiry_date"></div></div>
+                <div class="form-group"><label for="cert-id">Credential ID</label><input type="text" id="cert-id" name="credential_id"></div>
+                <div class="form-group"><label for="cert-url">Credential URL</label><input type="text" id="cert-url" name="credential_url"></div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="degree-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2 class="modal-title">Add New Degree</h2>
+            <form id="degree-form" class="modal-form" data-type="degree">
+                <input type="hidden" name="id">
+                <div class="form-row"><div class="form-group"><label for="degree-degree">Degree</label><input type="text" id="degree-degree" name="degree" required></div><div class="form-group"><label for="degree-field">Field of Study</label><input type="text" id="degree-field" name="field_of_study" required></div></div>
+                <div class="form-group"><label for="degree-school">School</label><input type="text" id="degree-school" name="school" required></div>
+                <div class="form-row"><div class="form-group"><label for="degree-country">Country</label><input type="text" id="degree-country" name="country"></div><div class="form-group"><label for="degree-city">City</label><input type="text" id="degree-city" name="city"></div></div>
+                <div class="form-row"><div class="form-group"><label for="degree-start-date">Start Date</label><input type="month" id="degree-start-date" name="start_date" required></div><div class="form-group"><label for="degree-end-date">End Date</label><input type="month" id="degree-end-date" name="end_date" required></div></div>
+                <div class="form-group"><label for="degree-gpa">Grade Point Average (GPA)</label><input type="text" id="degree-gpa" name="gpa"></div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-remove-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="text-align: center;">Confirm Removal</h2>
+            <p id="confirm-remove-text" style="text-align: center; font-size: 1.1em; margin-bottom: 25px;">Are you sure?</p>
+            <div class="form-actions" style="justify-content: center;">
+                <button type="button" class="btn btn-secondary modal-cancel-btn">No, Keep It</button>
+                <button type="button" id="confirm-delete-action-btn" class="btn btn-danger">Yes, Remove</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const navLinks = document.querySelectorAll('.sidebar nav a');
-            const contentArea = document.getElementById('content-area');
-            const experienceModal = document.getElementById('experience-modal');
+    document.addEventListener('DOMContentLoaded', function() {
+        const contentArea = document.getElementById('content-area');
+        let itemToDelete = { id: null, type: null };
 
-            // Function to load profile content
-            function loadProfileContent() {
-                contentArea.innerHTML = `
-                    <h1>Profile</h1>
-                    <div class="tile">
-                        <div class="tile-header">
-                            <h3>Experience</h3>
-                            <button class="toggle-btn">+</button>
-                        </div>
-                        <div class="tile-content">
-                            <button class="add-btn" data-modal="experience-modal">Add Experience</button>
-                        </div>
-                    </div>
-                    <div class="tile">
-                        <div class="tile-header">
-                            <h3>Certificates</h3>
-                            <button class="toggle-btn">+</button>
-                        </div>
-                        <div class="tile-content">
-                            <button class="add-btn">Add Certificate</button>
-                        </div>
-                    </div>
-                    <div class="tile">
-                        <div class="tile-header">
-                            <h3>Degrees</h3>
-                            <button class="toggle-btn">+</button>
-                        </div>
-                        <div class="tile-content">
-                            <button class="add-btn">Add Degree</button>
-                        </div>
-                    </div>
-                `;
+        const modals = {
+            experience: document.getElementById('experience-modal'),
+            certificate: document.getElementById('certificate-modal'),
+            degree: document.getElementById('degree-modal'),
+            confirm: document.getElementById('confirm-remove-modal')
+        };
+
+        const htmlCreators = {
+            experience: (exp) => {
+                const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
+                const location = [exp.city, exp.country].filter(Boolean).join(', ');
+                return `<div class="profile-item" data-id="${exp.id}" data-type="experience"><div class="item-details"><h4>${exp.position_title}</h4><p>${exp.employer}</p><p class="item-meta">${location}</p><p class="item-meta">${dateRange}</p><p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
+            },
+            certificate: (cert) => {
+                const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
+                const link = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
+                return `<div class="profile-item" data-id="${cert.id}" data-type="certificate"><div class="item-details"><h4>${cert.title}</h4><p>${cert.issuer}</p><p class="item-meta">${dates}</p><p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${link ? `&middot; ${link}` : ''}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
+            },
+            degree: (deg) => {
+                const location = [deg.city, deg.country].filter(Boolean).join(', ');
+                return `<div class="profile-item" data-id="${deg.id}" data-type="degree"><div class="item-details"><h4>${deg.degree} in ${deg.field_of_study}</h4><p>${deg.school}</p><p class="item-meta">${location}</p><p class="item-meta">${deg.start_date} - ${deg.end_date}</p><p class="item-meta">GPA: ${deg.gpa || 'N/A'}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
             }
+        };
 
-            // Sidebar navigation
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const contentName = this.getAttribute('data-content');
-                    if (contentName === 'Profile') {
-                        loadProfileContent();
+        async function fetchAndDisplayAll() {
+            Object.keys(htmlCreators).forEach(type => {
+                fetchAndDisplay(type);
+            });
+        }
+
+        async function fetchAndDisplay(type) {
+            const container = document.getElementById(`${type}-list`);
+            if (!container) return;
+            try {
+                const response = await fetch(`/api/${type}s`);
+                const items = await response.json();
+                container.innerHTML = '';
+                if (items.length > 0) {
+                    items.forEach(item => container.insertAdjacentHTML('beforeend', htmlCreators[type](item)));
+                } else {
+                    container.innerHTML = `<p>No ${type.replace('_', ' ')}s added yet.</p>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="error">Could not load ${type}s.</p>`;
+            }
+        }
+
+        function loadProfileContent() {
+            contentArea.innerHTML = `<h1>Profile</h1>` +
+                Object.keys(htmlCreators).map(type =>
+                    `<div class="tile">
+                        <div class="tile-header"><h3>${type.charAt(0).toUpperCase() + type.slice(1)}s</h3><button class="toggle-btn">+</button></div>
+                        <div class="tile-content">
+                            <div id="${type}-list"></div>
+                            <button class="add-btn" data-modal="${type}">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
+                        </div>
+                    </div>`
+                ).join('');
+            fetchAndDisplayAll();
+        }
+
+        async function openModalForEdit(type, id) {
+            const response = await fetch(`/api/${type}s/${id}`);
+            if (!response.ok) { alert(`Error loading ${type} data.`); return; }
+            const data = await response.json();
+
+            const modal = modals[type];
+            const form = modal.querySelector('form');
+            form.reset();
+
+            Object.keys(data).forEach(key => {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) {
+                    if (input.type === 'checkbox') input.checked = data[key];
+                    else input.value = data[key] || '';
+                }
+            });
+
+            form.querySelector('[name="id"]').value = id;
+            modal.querySelector('.modal-title').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            modal.classList.add('visible');
+        }
+
+        document.querySelectorAll('.sidebar nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const content = e.target.dataset.content;
+                if (content === 'Profile') {
+                    loadProfileContent();
+                } else {
+                    contentArea.innerHTML = `<h1>${content}</h1>`;
+                }
+            });
+        });
+
+        contentArea.addEventListener('click', function(event) {
+            const target = event.target;
+            if (target.closest('.tile-header')) {
+                const tile = target.closest('.tile');
+                tile.classList.toggle('expanded');
+                tile.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
+            } else if (target.closest('.add-btn')) {
+                const type = target.closest('.add-btn').dataset.modal;
+                const modal = modals[type];
+                modal.querySelector('form').reset();
+                modal.querySelector('[name="id"]').value = '';
+                modal.querySelector('.modal-title').textContent = `Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                modal.classList.add('visible');
+            } else if (target.closest('.edit-item-btn')) {
+                const item = target.closest('.profile-item');
+                openModalForEdit(item.dataset.type, item.dataset.id);
+            } else if (target.closest('.remove-item-btn')) {
+                const item = target.closest('.profile-item');
+                itemToDelete = { id: item.dataset.id, type: item.dataset.type };
+                modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
+                modals.confirm.classList.add('visible');
+            }
+        });
+
+        Object.values(modals).forEach(modal => {
+            if (!modal) return;
+            modal.addEventListener('click', e => {
+                if (e.target === modal || e.target.closest('.modal-close-btn, .modal-cancel-btn')) {
+                    modal.classList.remove('visible');
+                }
+            });
+
+            const form = modal.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const type = this.dataset.type;
+                    const id = this.querySelector('[name="id"]').value;
+                    const data = Object.fromEntries(new FormData(this).entries());
+                    if (data.is_present) data.is_present = true;
+
+                    const url = id ? `/api/${type}s/${id}` : `/api/${type}s`;
+                    const method = id ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (response.ok) {
+                        modal.classList.remove('visible');
+                        fetchAndDisplay(type);
                     } else {
-                        contentArea.innerHTML = `<h1>${contentName}</h1>`;
-                    }
-                });
-            });
-
-            // Universal event listener for dynamic content
-            contentArea.addEventListener('click', function(event) {
-                const header = event.target.closest('.tile-header');
-                if (header) {
-                    const tile = header.closest('.tile');
-                    const button = header.querySelector('.toggle-btn');
-                    tile.classList.toggle('expanded');
-                    button.textContent = tile.classList.contains('expanded') ? '-' : '+';
-                }
-
-                if (event.target.classList.contains('add-btn')) {
-                    const modalId = event.target.getAttribute('data-modal');
-                    if (modalId) {
-                        document.getElementById(modalId).classList.add('visible');
-                    }
-                }
-            });
-
-            // Modal closing logic
-            function closeModal(modal) {
-                modal.classList.remove('visible');
-            }
-
-            if (experienceModal) {
-                experienceModal.addEventListener('click', function(event) {
-                    if (event.target === this || event.target.classList.contains('modal-close-btn') || event.target.classList.contains('modal-cancel-btn')) {
-                        closeModal(this);
-                    }
-                });
-
-                const presentCheckbox = experienceModal.querySelector('#present-checkbox');
-                const endDateInput = experienceModal.querySelector('#end-date');
-                presentCheckbox.addEventListener('change', function() {
-                    endDateInput.disabled = this.checked;
-                    if (this.checked) {
-                        endDateInput.value = '';
+                        alert(`Failed to save ${type}.`);
                     }
                 });
             }
         });
+
+        document.getElementById('present-checkbox')?.addEventListener('change', function() {
+            document.getElementById('end-date').disabled = this.checked;
+            if (this.checked) document.getElementById('end-date').value = '';
+        });
+
+        modals.confirm?.querySelector('#confirm-delete-action-btn').addEventListener('click', async () => {
+            if (!itemToDelete.id || !itemToDelete.type) return;
+            const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
+            if (response.ok) {
+                fetchAndDisplay(itemToDelete.type);
+            } else {
+                alert(`Failed to remove ${itemToDelete.type}.`);
+            }
+            modals.confirm.classList.remove('visible');
+        });
+    });
     </script>
 </body>
 </html>
