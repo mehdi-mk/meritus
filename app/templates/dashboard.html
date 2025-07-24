@@ -36,13 +36,13 @@
         </div>
     </div>
 
-    <!-- Modals (re-used for add/edit) -->
+    <!-- Modal for Adding Experience -->
     <div id="experience-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-btn">&times;</button>
-            <h2 class="modal-title">Add New Experience</h2>
-            <form id="experience-form" class="modal-form" data-type="experience">
-                <input type="hidden" name="id">
+            <h2>Add New Experience</h2>
+            <form id="experience-form" class="modal-form">
+                <!-- Form fields as before -->
                 <div class="form-group"><label for="position-title">Position Title</label><input type="text" id="position-title" name="position_title" required></div>
                 <div class="form-group"><label for="employer">Employer</label><input type="text" id="employer" name="employer" required></div>
                 <div class="form-row"><div class="form-group"><label for="country">Country</label><input type="text" id="country" name="country"></div><div class="form-group"><label for="city">City</label><input type="text" id="city" name="city"></div></div>
@@ -54,12 +54,12 @@
         </div>
     </div>
 
+    <!-- Modal for Adding Certificate -->
     <div id="certificate-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-btn">&times;</button>
-            <h2 class="modal-title">Add New Certificate</h2>
-            <form id="certificate-form" class="modal-form" data-type="certificate">
-                <input type="hidden" name="id">
+            <h2>Add New Certificate</h2>
+            <form id="certificate-form" class="modal-form">
                 <div class="form-group"><label for="cert-title">Title</label><input type="text" id="cert-title" name="title" required></div>
                 <div class="form-group"><label for="cert-issuer">Issuer</label><input type="text" id="cert-issuer" name="issuer" required></div>
                 <div class="form-row"><div class="form-group"><label for="cert-issue-date">Issue Date</label><input type="month" id="cert-issue-date" name="issue_date" required></div><div class="form-group"><label for="cert-expiry-date">Expiry Date</label><input type="month" id="cert-expiry-date" name="expiry_date"></div></div>
@@ -70,12 +70,12 @@
         </div>
     </div>
 
+    <!-- Modal for Adding Degree -->
     <div id="degree-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-btn">&times;</button>
-            <h2 class="modal-title">Add New Degree</h2>
-            <form id="degree-form" class="modal-form" data-type="degree">
-                <input type="hidden" name="id">
+            <h2>Add New Degree</h2>
+            <form id="degree-form" class="modal-form">
                 <div class="form-row"><div class="form-group"><label for="degree-degree">Degree</label><input type="text" id="degree-degree" name="degree" required></div><div class="form-group"><label for="degree-field">Field of Study</label><input type="text" id="degree-field" name="field_of_study" required></div></div>
                 <div class="form-group"><label for="degree-school">School</label><input type="text" id="degree-school" name="school" required></div>
                 <div class="form-row"><div class="form-group"><label for="degree-country">Country</label><input type="text" id="degree-country" name="country"></div><div class="form-group"><label for="degree-city">City</label><input type="text" id="degree-city" name="city"></div></div>
@@ -86,10 +86,11 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal for Deletion -->
     <div id="confirm-remove-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="text-align: center;">Confirm Removal</h2>
-            <p id="confirm-remove-text" style="text-align: center; font-size: 1.1em; margin-bottom: 25px;">Are you sure?</p>
+            <p id="confirm-remove-text" style="text-align: center; font-size: 1.1em; margin-bottom: 25px;">Are you sure you want to remove this item?</p>
             <div class="form-actions" style="justify-content: center;">
                 <button type="button" class="btn btn-secondary modal-cancel-btn">No, Keep It</button>
                 <button type="button" id="confirm-delete-action-btn" class="btn btn-danger">Yes, Remove</button>
@@ -99,90 +100,101 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- Element & State Management ---
         const contentArea = document.getElementById('content-area');
-        let itemToDelete = { id: null, type: null };
-
         const modals = {
             experience: document.getElementById('experience-modal'),
             certificate: document.getElementById('certificate-modal'),
             degree: document.getElementById('degree-modal'),
             confirm: document.getElementById('confirm-remove-modal')
         };
+        let itemToDelete = { id: null, type: null };
 
-        const htmlCreators = {
-            experience: (exp) => {
-                const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
-                const location = [exp.city, exp.country].filter(Boolean).join(', ');
-                return `<div class="profile-item" data-id="${exp.id}" data-type="experience"><div class="item-details"><h4>${exp.position_title}</h4><p>${exp.employer}</p><p class="item-meta">${location}</p><p class="item-meta">${dateRange}</p><p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
-            },
-            certificate: (cert) => {
-                const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
-                const link = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
-                return `<div class="profile-item" data-id="${cert.id}" data-type="certificate"><div class="item-details"><h4>${cert.title}</h4><p>${cert.issuer}</p><p class="item-meta">${dates}</p><p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${link ? `&middot; ${link}` : ''}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
-            },
-            degree: (deg) => {
-                const location = [deg.city, deg.country].filter(Boolean).join(', ');
-                return `<div class="profile-item" data-id="${deg.id}" data-type="degree"><div class="item-details"><h4>${deg.degree} in ${deg.field_of_study}</h4><p>${deg.school}</p><p class="item-meta">${location}</p><p class="item-meta">${deg.start_date} - ${deg.end_date}</p><p class="item-meta">GPA: ${deg.gpa || 'N/A'}</p></div><div class="item-actions"><button class="edit-item-btn" title="Edit">✎</button><button class="remove-item-btn" title="Remove">&times;</button></div></div>`;
-            }
-        };
-
-        async function fetchAndDisplayAll() {
-            Object.keys(htmlCreators).forEach(type => {
-                fetchAndDisplay(type);
-            });
+        // --- HTML Generation Functions ---
+        function createExperienceHTML(exp) {
+            const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
+            const location = [exp.city, exp.country].filter(Boolean).join(', ');
+            return `
+                <div class="profile-item experience-item" data-id="${exp.id}" data-type="experience">
+                    <div class="item-details">
+                        <h4>${exp.position_title}</h4>
+                        <p>${exp.employer}</p>
+                        <p class="item-meta">${location}</p>
+                        <p class="item-meta">${dateRange}</p>
+                        <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
+                    </div>
+                    <button class="remove-item-btn" title="Remove Experience">&times;</button>
+                </div>`;
         }
 
-        async function fetchAndDisplay(type) {
-            const container = document.getElementById(`${type}-list`);
+        function createCertificateHTML(cert) {
+            const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
+            const credentialLink = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
+            return `
+                <div class="profile-item certificate-item" data-id="${cert.id}" data-type="certificate">
+                    <div class="item-details">
+                        <h4>${cert.title}</h4>
+                        <p>${cert.issuer}</p>
+                        <p class="item-meta">${dates}</p>
+                        <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
+                    </div>
+                    <button class="remove-item-btn" title="Remove Certificate">&times;</button>
+                </div>`;
+        }
+
+        function createDegreeHTML(degree) {
+            const location = [degree.city, degree.country].filter(Boolean).join(', ');
+            return `
+                <div class="profile-item degree-item" data-id="${degree.id}" data-type="degree">
+                    <div class="item-details">
+                        <h4>${degree.degree} in ${degree.field_of_study}</h4>
+                        <p>${degree.school}</p>
+                        <p class="item-meta">${location}</p>
+                        <p class="item-meta">${degree.start_date} - ${degree.end_date}</p>
+                        <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
+                    </div>
+                    <button class="remove-item-btn" title="Remove Degree">&times;</button>
+                </div>`;
+        }
+
+        // --- Data Fetching & Display ---
+        async function fetchAndDisplay(type, listId, createHTML) {
+            const container = document.getElementById(listId);
             if (!container) return;
             try {
                 const response = await fetch(`/api/${type}s`);
                 const items = await response.json();
                 container.innerHTML = '';
                 if (items.length > 0) {
-                    items.forEach(item => container.insertAdjacentHTML('beforeend', htmlCreators[type](item)));
+                    items.forEach(item => container.insertAdjacentHTML('beforeend', createHTML(item)));
                 } else {
-                    container.innerHTML = `<p>No ${type.replace('_', ' ')}s added yet.</p>`;
+                    container.innerHTML = `<p>No ${type}s added yet.</p>`;
                 }
             } catch (error) {
-                container.innerHTML = `<p class="error">Could not load ${type}s.</p>`;
+                console.error(`Failed to load ${type}s:`, error);
+                container.innerHTML = `<p class="error">Could not load ${type}s. Please try again later.</p>`;
             }
         }
 
+        // --- Main Logic ---
         function loadProfileContent() {
-            contentArea.innerHTML = `<h1>Profile</h1>` +
-                Object.keys(htmlCreators).map(type =>
-                    `<div class="tile">
-                        <div class="tile-header"><h3>${type.charAt(0).toUpperCase() + type.slice(1)}s</h3><button class="toggle-btn">+</button></div>
-                        <div class="tile-content">
-                            <div id="${type}-list"></div>
-                            <button class="add-btn" data-modal="${type}">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
-                        </div>
-                    </div>`
-                ).join('');
-            fetchAndDisplayAll();
-        }
-
-        async function openModalForEdit(type, id) {
-            const response = await fetch(`/api/${type}s/${id}`);
-            if (!response.ok) { alert(`Error loading ${type} data.`); return; }
-            const data = await response.json();
-
-            const modal = modals[type];
-            const form = modal.querySelector('form');
-            form.reset();
-
-            Object.keys(data).forEach(key => {
-                const input = form.querySelector(`[name="${key}"]`);
-                if (input) {
-                    if (input.type === 'checkbox') input.checked = data[key];
-                    else input.value = data[key] || '';
-                }
-            });
-
-            form.querySelector('[name="id"]').value = id;
-            modal.querySelector('.modal-title').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            modal.classList.add('visible');
+            contentArea.innerHTML = `
+                <h1>Profile</h1>
+                <div class="tile">
+                    <div class="tile-header"><h3>Experience</h3><button class="toggle-btn">+</button></div>
+                    <div class="tile-content"><div id="experience-list"></div><button class="add-btn" data-modal="experience">Add Experience</button></div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header"><h3>Certificates</h3><button class="toggle-btn">+</button></div>
+                    <div class="tile-content"><div id="certificate-list"></div><button class="add-btn" data-modal="certificate">Add Certificate</button></div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header"><h3>Degrees</h3><button class="toggle-btn">+</button></div>
+                    <div class="tile-content"><div id="degree-list"></div><button class="add-btn" data-modal="degree">Add Degree</button></div>
+                </div>`;
+            fetchAndDisplay('experience', 'experience-list', createExperienceHTML);
+            fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML);
+            fetchAndDisplay('degree', 'degree-list', createDegreeHTML);
         }
 
         document.querySelectorAll('.sidebar nav a').forEach(link => {
@@ -197,80 +209,93 @@
             });
         });
 
+        // --- Event Delegation ---
         contentArea.addEventListener('click', function(event) {
-            const target = event.target;
-            if (target.closest('.tile-header')) {
-                const tile = target.closest('.tile');
+            const header = event.target.closest('.tile-header');
+            if (header) {
+                const tile = header.closest('.tile');
                 tile.classList.toggle('expanded');
-                tile.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
-            } else if (target.closest('.add-btn')) {
-                const type = target.closest('.add-btn').dataset.modal;
-                const modal = modals[type];
-                modal.querySelector('form').reset();
-                modal.querySelector('[name="id"]').value = '';
-                modal.querySelector('.modal-title').textContent = `Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-                modal.classList.add('visible');
-            } else if (target.closest('.edit-item-btn')) {
-                const item = target.closest('.profile-item');
-                openModalForEdit(item.dataset.type, item.dataset.id);
-            } else if (target.closest('.remove-item-btn')) {
-                const item = target.closest('.profile-item');
+                header.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
+            }
+
+            const addBtn = event.target.closest('.add-btn');
+            if (addBtn) {
+                const modalType = addBtn.dataset.modal;
+                if (modals[modalType]) modals[modalType].classList.add('visible');
+            }
+
+            const removeBtn = event.target.closest('.remove-item-btn');
+            if (removeBtn) {
+                const item = removeBtn.closest('.profile-item');
                 itemToDelete = { id: item.dataset.id, type: item.dataset.type };
                 modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
                 modals.confirm.classList.add('visible');
             }
         });
 
-        Object.values(modals).forEach(modal => {
+        // --- Modal & Form Logic ---
+        function setupForm(modalType, fetchFunction, createHTML) {
+            const modal = modals[modalType];
             if (!modal) return;
+            const form = modal.querySelector('.modal-form');
+
+            const closeModal = () => {
+                modal.classList.remove('visible');
+                form.reset();
+            };
+
             modal.addEventListener('click', e => {
-                if (e.target === modal || e.target.closest('.modal-close-btn, .modal-cancel-btn')) {
-                    modal.classList.remove('visible');
+                if (e.target === modal || e.target.matches('.modal-close-btn, .modal-cancel-btn')) {
+                    closeModal();
                 }
             });
 
-            const form = modal.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const type = this.dataset.type;
-                    const id = this.querySelector('[name="id"]').value;
-                    const data = Object.fromEntries(new FormData(this).entries());
-                    if (data.is_present) data.is_present = true;
-
-                    const url = id ? `/api/${type}s/${id}` : `/api/${type}s`;
-                    const method = id ? 'PUT' : 'POST';
-
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    });
-
-                    if (response.ok) {
-                        modal.classList.remove('visible');
-                        fetchAndDisplay(type);
-                    } else {
-                        alert(`Failed to save ${type}.`);
-                    }
+            if (form.id === 'experience-form') {
+                form.querySelector('#present-checkbox')?.addEventListener('change', function() {
+                    form.querySelector('#end-date').disabled = this.checked;
+                    if (this.checked) form.querySelector('#end-date').value = '';
                 });
             }
-        });
 
-        document.getElementById('present-checkbox')?.addEventListener('change', function() {
-            document.getElementById('end-date').disabled = this.checked;
-            if (this.checked) document.getElementById('end-date').value = '';
-        });
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const data = Object.fromEntries(new FormData(this).entries());
+                if (form.id === 'experience-form') data.is_present = data.hasOwnProperty('is_present');
 
-        modals.confirm?.querySelector('#confirm-delete-action-btn').addEventListener('click', async () => {
-            if (!itemToDelete.id || !itemToDelete.type) return;
-            const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
-            if (response.ok) {
-                fetchAndDisplay(itemToDelete.type);
-            } else {
-                alert(`Failed to remove ${itemToDelete.type}.`);
+                const response = await fetch(`/api/${modalType}s`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (response.ok) {
+                    closeModal();
+                    fetchAndDisplay(modalType, `${modalType}-list`, createHTML);
+                } else {
+                    alert(`Failed to save ${modalType}.`);
+                }
+            });
+        }
+        setupForm('experience', fetchAndDisplay, createExperienceHTML);
+        setupForm('certificate', fetchAndDisplay, createCertificateHTML);
+        setupForm('degree', fetchAndDisplay, createDegreeHTML);
+
+        // --- Confirmation Modal Logic ---
+        modals.confirm?.addEventListener('click', async function(event) {
+            if (event.target === this || event.target.matches('.modal-cancel-btn')) {
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
             }
-            modals.confirm.classList.remove('visible');
+            if (event.target.matches('#confirm-delete-action-btn')) {
+                if (!itemToDelete.id || !itemToDelete.type) return;
+                const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    document.querySelector(`.profile-item[data-id="${itemToDelete.id}"][data-type="${itemToDelete.type}"]`)?.remove();
+                } else {
+                    alert(`Failed to remove ${itemToDelete.type}.`);
+                }
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
+            }
         });
     });
     </script>

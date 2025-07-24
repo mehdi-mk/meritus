@@ -76,6 +76,7 @@ body, html {
     margin-bottom: 20px;
 }
 
+/* Tile Styles */
 .tile {
     background-color: white;
     border-radius: 8px;
@@ -116,13 +117,13 @@ body, html {
     max-height: 0;
     overflow: hidden;
     padding: 0 20px;
-    transition: max-height 0.2s ease-out, padding 0.2s ease-out;
+    transition: max-height 0.1s ease-out, padding 0.1s ease-out;
 }
 
 .tile.expanded .tile-content {
-    max-height: 1000px;
+    max-height: 1000px; /* Increased max-height for longer lists */
     padding: 15px 20px;
-    transition: max-height 0.3s ease-in, padding 0.3s ease-in;
+    transition: max-height 0.2s ease-in, padding 0.2s ease-in;
 }
 
 .add-btn {
@@ -141,6 +142,7 @@ body, html {
     text-decoration: underline;
 }
 
+/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -155,7 +157,7 @@ body, html {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    overflow-y: auto;
+    overflow-y: auto; /* Allow scrolling for long modals */
 }
 
 .modal-overlay.visible {
@@ -198,24 +200,72 @@ body, html {
     color: #333;
 }
 
-.modal-form .form-group { margin-bottom: 15px; }
-.modal-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+/* Generic Form Styles */
+.modal-form .form-group {
+    margin-bottom: 15px;
+}
+
+.modal-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
 .modal-form input[type="text"],
 .modal-form input[type="month"],
-.modal-form select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-.form-row { display: flex; gap: 20px; }
-.form-row .form-group { flex: 1; }
-.checkbox-group { display: flex; align-items: center; }
-.checkbox-group input { margin-right: 10px; }
-.checkbox-group label { margin-bottom: 0; font-weight: normal; }
-.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+.modal-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
 
-.btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-group input {
+    margin-right: 10px;
+}
+
+.checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
 .btn-primary { background-color: #007bff; color: white; }
 .btn-secondary { background-color: #6c757d; color: white; }
 .btn-danger { background-color: #d9534f; color: white; }
 .btn-danger:hover { background-color: #c9302c; }
 
+/* Styles for dynamically added profile items */
 .profile-item {
     border-bottom: 1px solid #e0e0e0;
     padding: 15px 0;
@@ -225,34 +275,50 @@ body, html {
     align-items: flex-start;
     gap: 15px;
 }
-.profile-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 5px; }
 
-.item-details { flex-grow: 1; }
-.item-details h4 { margin: 0 0 5px 0; font-size: 1.1em; color: #333; }
-.item-details p { margin: 0 0 4px 0; font-size: 0.95em; color: #555; }
-.item-details .item-meta { font-size: 0.85em; color: #777; }
-.item-details a { color: #007bff; text-decoration: none; }
-.item-details a:hover { text-decoration: underline; }
-
-.item-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.profile-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px;
 }
 
-.edit-item-btn, .remove-item-btn {
+.item-details {
+    flex-grow: 1;
+}
+
+.item-details h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.item-details p {
+    margin: 0 0 4px 0;
+    font-size: 0.95em;
+    color: #555;
+}
+
+.item-details .item-meta {
+    font-size: 0.85em;
+    color: #777;
+}
+
+.remove-item-btn {
     background: none;
     border: none;
     color: #ccc;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: bold;
     cursor: pointer;
-    padding: 0 4px;
+    padding: 0;
     line-height: 1;
     transition: color 0.2s ease-in-out;
 }
 
-.edit-item-btn:hover { color: #007bff; }
-.remove-item-btn:hover { color: #d9534f; }
+.remove-item-btn:hover {
+    color: #d9534f;
+}
 
-#confirm-remove-modal .modal-content { max-width: 450px; }
+#confirm-remove-modal .modal-content {
+    max-width: 450px;
+}
