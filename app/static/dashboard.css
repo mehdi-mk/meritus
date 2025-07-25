@@ -322,3 +322,33 @@ body, html {
 #confirm-remove-modal .modal-content {
     max-width: 450px;
 }
+
+/* Add these styles to the end of your dashboard.css file */
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Provides space between the icons */
+}
+
+/* Generic style for both icons */
+.edit-item-btn, .remove-item-btn {
+    background: none;
+    border: none;
+    color: #b0b0b0; /* A neutral, less prominent color */
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+    transition: color 0.2s ease-in-out;
+}
+
+/* Specific hover color for the edit icon */
+.edit-item-btn:hover {
+    color: #007bff; /* Blue */
+}
+
+/* The remove icon already has a hover effect defined, this ensures it remains */
+.remove-item-btn:hover {
+    color: #d9534f; /* Red */
+}

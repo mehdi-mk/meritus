@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -43,6 +44,7 @@
             <h2>Add New Experience</h2>
             <form id="experience-form" class="modal-form">
                 <!-- Form fields as before -->
+                <input type="hidden" name="id">
                 <div class="form-group"><label for="position-title">Position Title</label><input type="text" id="position-title" name="position_title" required></div>
                 <div class="form-group"><label for="employer">Employer</label><input type="text" id="employer" name="employer" required></div>
                 <div class="form-row"><div class="form-group"><label for="country">Country</label><input type="text" id="country" name="country"></div><div class="form-group"><label for="city">City</label><input type="text" id="city" name="city"></div></div>
@@ -60,6 +62,7 @@
             <button class="modal-close-btn">&times;</button>
             <h2>Add New Certificate</h2>
             <form id="certificate-form" class="modal-form">
+                <input type="hidden" name="id">
                 <div class="form-group"><label for="cert-title">Title</label><input type="text" id="cert-title" name="title" required></div>
                 <div class="form-group"><label for="cert-issuer">Issuer</label><input type="text" id="cert-issuer" name="issuer" required></div>
                 <div class="form-row"><div class="form-group"><label for="cert-issue-date">Issue Date</label><input type="month" id="cert-issue-date" name="issue_date" required></div><div class="form-group"><label for="cert-expiry-date">Expiry Date</label><input type="month" id="cert-expiry-date" name="expiry_date"></div></div>
@@ -76,10 +79,11 @@
             <button class="modal-close-btn">&times;</button>
             <h2>Add New Degree</h2>
             <form id="degree-form" class="modal-form">
+                <input type="hidden" name="id">
                 <div class="form-row"><div class="form-group"><label for="degree-degree">Degree</label><input type="text" id="degree-degree" name="degree" required></div><div class="form-group"><label for="degree-field">Field of Study</label><input type="text" id="degree-field" name="field_of_study" required></div></div>
                 <div class="form-group"><label for="degree-school">School</label><input type="text" id="degree-school" name="school" required></div>
                 <div class="form-row"><div class="form-group"><label for="degree-country">Country</label><input type="text" id="degree-country" name="country"></div><div class="form-group"><label for="degree-city">City</label><input type="text" id="degree-city" name="city"></div></div>
-                <div class="form-row"><div class="form-group"><label for="degree-start-date">Start Date</label><input type="month" id="degree-start-date" name="start_date" required></div><div class="form-group"><label for="degree-end-date">End Date</label><input type="month" id="degree-end-date" name="end_date" required></div></div>
+                <div class="form-row"><div class="form-group"><label for="degree-start-date">Start Date</label><input type="month" id="degree-start-date" name="start_date" required></div><div class="form-group"><label for="degree-end-date">End Date (or Expected)</label><input type="month" id="degree-end-date" name="end_date" required></div></div>
                 <div class="form-group"><label for="degree-gpa">Grade Point Average (GPA)</label><input type="text" id="degree-gpa" name="gpa"></div>
                 <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button></div>
             </form>
@@ -98,206 +102,7 @@
         </div>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Element & State Management ---
-        const contentArea = document.getElementById('content-area');
-        const modals = {
-            experience: document.getElementById('experience-modal'),
-            certificate: document.getElementById('certificate-modal'),
-            degree: document.getElementById('degree-modal'),
-            confirm: document.getElementById('confirm-remove-modal')
-        };
-        let itemToDelete = { id: null, type: null };
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
-        // --- HTML Generation Functions ---
-        function createExperienceHTML(exp) {
-            const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
-            const location = [exp.city, exp.country].filter(Boolean).join(', ');
-            return `
-                <div class="profile-item experience-item" data-id="${exp.id}" data-type="experience">
-                    <div class="item-details">
-                        <h4>${exp.position_title}</h4>
-                        <p>${exp.employer}</p>
-                        <p class="item-meta">${location}</p>
-                        <p class="item-meta">${dateRange}</p>
-                        <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
-                    </div>
-                    <button class="remove-item-btn" title="Remove Experience">&times;</button>
-                </div>`;
-        }
-
-        function createCertificateHTML(cert) {
-            const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
-            const credentialLink = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
-            return `
-                <div class="profile-item certificate-item" data-id="${cert.id}" data-type="certificate">
-                    <div class="item-details">
-                        <h4>${cert.title}</h4>
-                        <p>${cert.issuer}</p>
-                        <p class="item-meta">${dates}</p>
-                        <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
-                    </div>
-                    <button class="remove-item-btn" title="Remove Certificate">&times;</button>
-                </div>`;
-        }
-
-        function createDegreeHTML(degree) {
-            const location = [degree.city, degree.country].filter(Boolean).join(', ');
-            return `
-                <div class="profile-item degree-item" data-id="${degree.id}" data-type="degree">
-                    <div class="item-details">
-                        <h4>${degree.degree} in ${degree.field_of_study}</h4>
-                        <p>${degree.school}</p>
-                        <p class="item-meta">${location}</p>
-                        <p class="item-meta">${degree.start_date} - ${degree.end_date}</p>
-                        <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
-                    </div>
-                    <button class="remove-item-btn" title="Remove Degree">&times;</button>
-                </div>`;
-        }
-
-        // --- Data Fetching & Display ---
-        async function fetchAndDisplay(type, listId, createHTML) {
-            const container = document.getElementById(listId);
-            if (!container) return;
-            try {
-                const response = await fetch(`/api/${type}s`);
-                const items = await response.json();
-                container.innerHTML = '';
-                if (items.length > 0) {
-                    items.forEach(item => container.insertAdjacentHTML('beforeend', createHTML(item)));
-                } else {
-                    container.innerHTML = `<p>No ${type}s added yet.</p>`;
-                }
-            } catch (error) {
-                console.error(`Failed to load ${type}s:`, error);
-                container.innerHTML = `<p class="error">Could not load ${type}s. Please try again later.</p>`;
-            }
-        }
-
-        // --- Main Logic ---
-        function loadProfileContent() {
-            contentArea.innerHTML = `
-                <h1>Profile</h1>
-                <div class="tile">
-                    <div class="tile-header"><h3>Experience</h3><button class="toggle-btn">+</button></div>
-                    <div class="tile-content"><div id="experience-list"></div><button class="add-btn" data-modal="experience">Add Experience</button></div>
-                </div>
-                <div class="tile">
-                    <div class="tile-header"><h3>Certificates</h3><button class="toggle-btn">+</button></div>
-                    <div class="tile-content"><div id="certificate-list"></div><button class="add-btn" data-modal="certificate">Add Certificate</button></div>
-                </div>
-                <div class="tile">
-                    <div class="tile-header"><h3>Degrees</h3><button class="toggle-btn">+</button></div>
-                    <div class="tile-content"><div id="degree-list"></div><button class="add-btn" data-modal="degree">Add Degree</button></div>
-                </div>`;
-            fetchAndDisplay('experience', 'experience-list', createExperienceHTML);
-            fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML);
-            fetchAndDisplay('degree', 'degree-list', createDegreeHTML);
-        }
-
-        document.querySelectorAll('.sidebar nav a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const content = e.target.dataset.content;
-                if (content === 'Profile') {
-                    loadProfileContent();
-                } else {
-                    contentArea.innerHTML = `<h1>${content}</h1>`;
-                }
-            });
-        });
-
-        // --- Event Delegation ---
-        contentArea.addEventListener('click', function(event) {
-            const header = event.target.closest('.tile-header');
-            if (header) {
-                const tile = header.closest('.tile');
-                tile.classList.toggle('expanded');
-                header.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
-            }
-
-            const addBtn = event.target.closest('.add-btn');
-            if (addBtn) {
-                const modalType = addBtn.dataset.modal;
-                if (modals[modalType]) modals[modalType].classList.add('visible');
-            }
-
-            const removeBtn = event.target.closest('.remove-item-btn');
-            if (removeBtn) {
-                const item = removeBtn.closest('.profile-item');
-                itemToDelete = { id: item.dataset.id, type: item.dataset.type };
-                modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
-                modals.confirm.classList.add('visible');
-            }
-        });
-
-        // --- Modal & Form Logic ---
-        function setupForm(modalType, fetchFunction, createHTML) {
-            const modal = modals[modalType];
-            if (!modal) return;
-            const form = modal.querySelector('.modal-form');
-
-            const closeModal = () => {
-                modal.classList.remove('visible');
-                form.reset();
-            };
-
-            modal.addEventListener('click', e => {
-                if (e.target === modal || e.target.matches('.modal-close-btn, .modal-cancel-btn')) {
-                    closeModal();
-                }
-            });
-
-            if (form.id === 'experience-form') {
-                form.querySelector('#present-checkbox')?.addEventListener('change', function() {
-                    form.querySelector('#end-date').disabled = this.checked;
-                    if (this.checked) form.querySelector('#end-date').value = '';
-                });
-            }
-
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const data = Object.fromEntries(new FormData(this).entries());
-                if (form.id === 'experience-form') data.is_present = data.hasOwnProperty('is_present');
-
-                const response = await fetch(`/api/${modalType}s`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-                if (response.ok) {
-                    closeModal();
-                    fetchAndDisplay(modalType, `${modalType}-list`, createHTML);
-                } else {
-                    alert(`Failed to save ${modalType}.`);
-                }
-            });
-        }
-        setupForm('experience', fetchAndDisplay, createExperienceHTML);
-        setupForm('certificate', fetchAndDisplay, createCertificateHTML);
-        setupForm('degree', fetchAndDisplay, createDegreeHTML);
-
-        // --- Confirmation Modal Logic ---
-        modals.confirm?.addEventListener('click', async function(event) {
-            if (event.target === this || event.target.matches('.modal-cancel-btn')) {
-                this.classList.remove('visible');
-                itemToDelete = { id: null, type: null };
-            }
-            if (event.target.matches('#confirm-delete-action-btn')) {
-                if (!itemToDelete.id || !itemToDelete.type) return;
-                const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    document.querySelector(`.profile-item[data-id="${itemToDelete.id}"][data-type="${itemToDelete.type}"]`)?.remove();
-                } else {
-                    alert(`Failed to remove ${itemToDelete.type}.`);
-                }
-                this.classList.remove('visible');
-                itemToDelete = { id: null, type: null };
-            }
-        });
-    });
-    </script>
 </body>
 </html>

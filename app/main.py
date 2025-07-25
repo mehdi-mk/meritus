@@ -211,7 +211,7 @@ def add_experience():
         employer=data['employer'],
         start_date=parse_date(data.get('start_date')),
         end_date=parse_date(data.get('end_date')),
-        is_present=data.get('is_present', False),
+        is_present=bool(data.get('is_present', False)),
         country=data.get('country'), city=data.get('city'),
         employment_type=data.get('employment_type'),
         employment_arrangement=data.get('employment_arrangement')
@@ -219,6 +219,33 @@ def add_experience():
     db.session.add(new_experience)
     db.session.commit()
     return jsonify(new_experience.to_dict()), 201
+
+@app.route('/api/experiences/<int:id>', methods=['GET'])
+@login_required
+def get_experience(id):
+    cert = Experience.query.filter_by(id=id, user_id=current_user.id).first()
+    if cert is None:
+        return jsonify({'message': 'Experience not found'}), 404
+    return jsonify(cert.to_dict())
+
+@app.route('/api/experiences/<int:id>', methods=['PUT'])
+@login_required
+def edit_experience(id):
+    exp = Experience.query.get_or_404(id)
+    if exp.user_id != current_user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json()
+    exp.position_title = data['position_title']
+    exp.employer = data['employer']
+    exp.start_date = parse_date(data['start_date'])
+    exp.end_date = parse_date(data.get('end_date'))
+    exp.is_present = bool(data.get('is_present', False))
+    exp.country = data.get('country')
+    exp.city = data.get('city')
+    exp.employment_type = data.get('employment_type')
+    exp.employment_arrangement = data.get('employment_arrangement')
+    db.session.commit()
+    return jsonify(exp.to_dict())
 
 @app.route('/api/experiences/<int:id>', methods=['DELETE'])
 @login_required
@@ -253,6 +280,30 @@ def add_certificate():
     db.session.commit()
     return jsonify(new_cert.to_dict()), 201
 
+@app.route('/api/certificates/<int:id>', methods=['GET'])
+@login_required
+def get_certificate(id):
+    cert = Certificate.query.filter_by(id=id, user_id=current_user.id).first()
+    if cert is None:
+        return jsonify({'message': 'Certificate not found'}), 404
+    return jsonify(cert.to_dict())
+
+@app.route('/api/certificates/<int:id>', methods=['PUT'])
+@login_required
+def edit_certificate(id):
+    cert = Certificate.query.get_or_404(id)
+    if cert.user_id != current_user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json()
+    cert.title = data['title']
+    cert.issuer = data['issuer']
+    cert.issue_date = parse_date(data['issue_date'])
+    cert.expiry_date = parse_date(data.get('expiry_date'))
+    cert.credential_id = data.get('credential_id')
+    cert.credential_url = data.get('credential_url')
+    db.session.commit()
+    return jsonify(cert.to_dict())
+
 @app.route('/api/certificates/<int:id>', methods=['DELETE'])
 @login_required
 def delete_certificate(id):
@@ -286,6 +337,32 @@ def add_degree():
     db.session.add(new_degree)
     db.session.commit()
     return jsonify(new_degree.to_dict()), 201
+
+@app.route('/api/degrees/<int:id>', methods=['GET'])
+@login_required
+def get_degree(id):
+    cert = Degree.query.filter_by(id=id, user_id=current_user.id).first()
+    if cert is None:
+        return jsonify({'message': 'Degree not found'}), 404
+    return jsonify(cert.to_dict())
+
+@app.route('/api/degrees/<int:id>', methods=['PUT'])
+@login_required
+def edit_degree(id):
+    degree = Degree.query.get_or_404(id)
+    if degree.user_id != current_user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+    data = request.get_json()
+    degree.degree = data['degree']
+    degree.field_of_study = data['field_of_study']
+    degree.school = data['school']
+    degree.start_date = parse_date(data['start_date'])
+    degree.end_date = parse_date(data['end_date'])
+    degree.country = data.get('country')
+    degree.city = data.get('city')
+    degree.gpa = data.get('gpa')
+    db.session.commit()
+    return jsonify(degree.to_dict())
 
 @app.route('/api/degrees/<int:id>', methods=['DELETE'])
 @login_required
