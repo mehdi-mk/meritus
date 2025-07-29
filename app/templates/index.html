@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meritus</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Change this link to point to dashboard.css -->
+    <!--<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Meritus</h1>
-        <h2>Where job positions are truly filled on the basis of Merit!</h2>
-        <div class="buttons">
-            <a href="{{ url_for('signup') }}"><button>Sign Up</button></a>
-            <a href="{{ url_for('login') }}"><button>Log In</button></a>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <h1>Meritus</h1>
+            <h2>Where job positions are truly filled on the basis of Merit!</h2>
+            <div class="buttons">
+                <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Log In</a>
+            </div>
         </div>
     </div>
 </body>

@@ -15,9 +15,9 @@
                 <nav>
                     <ul>
                         <li><a href="#" data-content="Home">Home</a></li>
-                        <li><a href="#" data-content="Activity">Activity</a></li>
+                        <li><a href="#" data-content="Education">Education</a></li>
+                        <li><a href="#" data-content="Job">Job</a></li>
                         <li><a href="#" data-content="Profile">Profile</a></li>
-                        <li><a href="#" data-content="Account">Account</a></li>
                         <li><a href="#" data-content="Settings">Settings</a></li>
                         <li><a href="#" data-content="Help">Help</a></li>
                     </ul>
@@ -99,6 +99,47 @@
                 <button type="button" class="btn btn-secondary modal-cancel-btn">No, Keep It</button>
                 <button type="button" id="confirm-delete-action-btn" class="btn btn-danger">Yes, Remove</button>
             </div>
+        </div>
+    </div>
+
+    <div id="account-settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Account Settings</h2>
+            <form id="account-settings-form" class="modal-form form-grid">
+                <div class="form-group">
+                    <label for="account-first-name">First Name</label>
+                    <input type="text" id="account-first-name" name="first_name">
+                </div>
+                <div class="form-group">
+                    <label for="account-last-name">Last Name</label>
+                    <input type="text" id="account-last-name" name="last_name">
+                </div>
+                <div class="form-group full-width">
+                    <label for="account-email">Email</label>
+                    <input type="email" id="account-email" name="email" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="account-phone">Phone</label>
+                    <input type="tel" id="account-phone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="account-country">Country</label>
+                    <input type="text" id="account-country" name="country">
+                </div>
+                <div class="form-group">
+                    <label for="account-city">City</label>
+                    <input type="text" id="account-city" name="city">
+                </div>
+                <div class="form-group full-width">
+                    <label for="account-bio">Bio</label>
+                    <textarea id="account-bio" name="bio" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 

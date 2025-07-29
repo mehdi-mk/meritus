@@ -5,9 +5,151 @@ document.addEventListener('DOMContentLoaded', function() {
         experience: document.getElementById('experience-modal'),
         certificate: document.getElementById('certificate-modal'),
         degree: document.getElementById('degree-modal'),
+        account: document.getElementById('account-settings-modal'),
         confirm: document.getElementById('confirm-remove-modal')
     };
     let itemToDelete = { id: null, type: null };
+
+    // --- Navigation & Content Loading ---
+    const contentLoaders = {
+        'Home': loadHomeContent,
+        'Profile': loadProfileContent,
+        'Settings': loadSettingsContent,
+        'Job': loadJobContent,
+        // Add other sections like 'Education', 'Help' if they have specific loaders
+    };
+
+    document.querySelector('.sidebar nav').addEventListener('click', (event) => {
+        if (event.target.tagName === 'A') {
+            const contentName = event.target.dataset.content;
+            if (contentLoaders[contentName]) {
+                contentLoaders[contentName]();
+            } else {
+                // Generic fallback for simple pages
+                contentArea.innerHTML = `<h1>${contentName}</h1>`;
+            }
+        }
+    });
+
+    function loadHomeContent() {
+        contentArea.innerHTML = '<h1>Home</h1>';
+    }
+
+    function loadJobContent() {
+        contentArea.innerHTML = `
+            <h1>Job</h1>
+            <div class="tab-panel">
+                <button class="tab-button active" data-tab="get-hired">Get Hired</button>
+                <button class="tab-button" data-tab="hire">Hire</button>
+            </div>
+            <div id="get-hired" class="tab-pane active">
+                <h2>Get Hired</h2>
+                <p>This is where you'll find job postings and opportunities.</p>
+            </div>
+            <div id="hire" class="tab-pane">
+                <h2>Hire</h2>
+                <p>This is where you'll be able to post jobs and search for candidates.</p>
+            </div>
+        `;
+
+        contentArea.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                if (button.classList.contains('active')) return;
+                const tabName = button.dataset.tab;
+                contentArea.querySelector('.tab-button.active').classList.remove('active');
+                button.classList.add('active');
+                contentArea.querySelector('.tab-pane.active').classList.remove('active');
+                contentArea.querySelector(`#${tabName}`).classList.add('active');
+            });
+        });
+    }
+
+    async function loadProfileContent() {
+        contentArea.innerHTML = `
+            <h1>Profile</h1>
+            <div class="profile-section">
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Experience</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="experience-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="experience">Add Experience</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Certificates</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="certificate-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="certificate">Add Certificate</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Degrees</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="degree-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="degree">Add Degree</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        await Promise.all([
+            fetchAndDisplay('experience', 'experience-list', createExperienceHTML),
+            fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML),
+            fetchAndDisplay('degree', 'degree-list', createDegreeHTML)
+        ]);
+    }
+
+    function loadSettingsContent() {
+        contentArea.innerHTML = `
+            <h1>Settings</h1>
+            <div class="profile-section">
+                <div class="profile-item account-tile">
+                    <div class="item-details">
+                        <h4>Account Management</h4>
+                        <p>Manage your email, name, and other personal details.</p>
+                    </div>
+                    <div class="item-actions">
+                        <button class="edit-account-btn" title="Edit Account Settings"><i class="fas fa-user-cog"></i></button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- Data Fetching & Display ---
+    async function fetchAndDisplay(type, listId, createHTML) {
+        try {
+            const response = await fetch(`/api/${type}s`);
+            if (!response.ok) throw new Error(`Failed to load ${type}s.`);
+            const items = await response.json();
+            const listElement = document.getElementById(listId);
+            if (listElement) {
+                listElement.innerHTML = items.length > 0 ? items.map(createHTML).join('') : `<p class="empty-list-msg">No ${type}s added yet.</p>`;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     // --- HTML Generation Functions ---
     function createExperienceHTML(exp) {
@@ -28,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>`;
     }
-
 
     function createCertificateHTML(cert) {
         const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
@@ -66,6 +207,54 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
     }
 
+    // --- Unified Event Delegation for Main Content Area ---
+    contentArea.addEventListener('click', function(event) {
+        const header = event.target.closest('.tile-header');
+        if (header) {
+            const tile = header.closest('.tile');
+            tile.classList.toggle('expanded');
+            header.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
+            return;
+        }
+
+        const addBtn = event.target.closest('.add-btn');
+        if (addBtn) {
+            const modalType = addBtn.dataset.modal;
+            if (modals[modalType]) {
+                const modal = modals[modalType];
+                const form = modal.querySelector('.modal-form');
+                form.reset();
+                form.querySelector('input[name="id"]').value = '';
+                modal.querySelector('h2').textContent = `Add New ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`;
+                modal.classList.add('visible');
+            }
+            return;
+        }
+
+        const editBtn = event.target.closest('.edit-item-btn');
+        if (editBtn) {
+            const item = editBtn.closest('.profile-item');
+            openModalForEdit(item.dataset.id, item.dataset.type);
+            return;
+        }
+
+        const removeBtn = event.target.closest('.remove-item-btn');
+        if (removeBtn) {
+            const item = removeBtn.closest('.profile-item');
+            itemToDelete = { id: item.dataset.id, type: item.dataset.type };
+            modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
+            modals.confirm.classList.add('visible');
+            return;
+        }
+
+        // **FIX**: Correctly handle the account edit button click
+        const editAccountBtn = event.target.closest('.edit-account-btn');
+        if (editAccountBtn) {
+            openAccountModal();
+        }
+    });
+
+    // --- Modal & Form Logic ---
     async function openModalForEdit(id, type) {
         try {
             const response = await fetch(`/api/${type}s/${id}`);
@@ -74,24 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const modal = modals[type];
             const form = modal.querySelector('.modal-form');
-
             form.reset();
 
-            // Populate form with fetched data
             for (const key in itemData) {
                 if (Object.prototype.hasOwnProperty.call(itemData, key)) {
                     const input = form.querySelector(`[name="${key}"]`);
                     if (input) {
-                        if (input.type === 'checkbox') {
-                            input.checked = itemData[key];
-                        } else {
-                            input.value = itemData[key];
-                        }
+                        input.type === 'checkbox' ? (input.checked = itemData[key]) : (input.value = itemData[key]);
                     }
                 }
             }
 
-            // Manually trigger change event for checkbox to update UI
             if (type === 'experience') {
                 const presentCheckbox = form.querySelector('#present-checkbox');
                 if (presentCheckbox) presentCheckbox.dispatchEvent(new Event('change'));
@@ -101,116 +283,45 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.classList.add('visible');
         } catch (error) {
             console.error(`Failed to load ${type} for editing:`, error);
-            alert(`Could not load ${type} data. Please try again.`);
         }
     }
 
-    // --- Data Fetching & Display ---
-    async function fetchAndDisplay(type, listId, createHTML) {
-        const container = document.getElementById(listId);
-        if (!container) return;
+    async function openAccountModal() {
         try {
-            const response = await fetch(`/api/${type}s`);
-            const items = await response.json();
-            container.innerHTML = '';
-            if (items.length > 0) {
-                items.forEach(item => container.insertAdjacentHTML('beforeend', createHTML(item)));
-            } else {
-                container.innerHTML = `<p>No ${type}s added yet.</p>`;
-            }
+            const response = await fetch('/api/account');
+            if (!response.ok) throw new Error('Failed to fetch account data.');
+            const data = await response.json();
+
+            const modal = modals.account;
+            const form = modal.querySelector('#account-settings-form');
+
+            form.querySelector('#account-first-name').value = data.first_name || '';
+            form.querySelector('#account-last-name').value = data.last_name || '';
+            form.querySelector('#account-email').value = data.email || '';
+            form.querySelector('#account-phone').value = data.phone || '';
+            form.querySelector('#account-country').value = data.country || '';
+            form.querySelector('#account-city').value = data.city || '';
+            form.querySelector('#account-bio').value = data.bio || '';
+
+            modal.classList.add('visible');
         } catch (error) {
-            console.error(`Failed to load ${type}s:`, error);
-            container.innerHTML = `<p class="error">Could not load ${type}s. Please try again later.</p>`;
+            console.error('Error opening account modal:', error);
+            alert(error.message);
         }
     }
 
-    // --- Main Logic ---
-    function loadProfileContent() {
-        contentArea.innerHTML = `
-            <h1>Profile</h1>
-            <div class="tile">
-                <div class="tile-header"><h3>Experiences</h3><button class="toggle-btn">+</button></div>
-                <div class="tile-content"><div id="experience-list"></div><button class="add-btn" data-modal="experience">Add Experience</button></div>
-            </div>
-            <div class="tile">
-                <div class="tile-header"><h3>Certificates</h3><button class="toggle-btn">+</button></div>
-                <div class="tile-content"><div id="certificate-list"></div><button class="add-btn" data-modal="certificate">Add Certificate</button></div>
-            </div>
-            <div class="tile">
-                <div class="tile-header"><h3>Degrees</h3><button class="toggle-btn">+</button></div>
-                <div class="tile-content"><div id="degree-list"></div><button class="add-btn" data-modal="degree">Add Degree</button></div>
-            </div>`;
-        fetchAndDisplay('experience', 'experience-list', createExperienceHTML);
-        fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML);
-        fetchAndDisplay('degree', 'degree-list', createDegreeHTML);
-    }
-
-    document.querySelectorAll('.sidebar nav a').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const content = e.target.dataset.content;
-            if (content === 'Profile') {
-                loadProfileContent();
-            } else {
-                contentArea.innerHTML = `<h1>${content}</h1>`;
-            }
-        });
-    });
-
-    // --- Event Delegation ---
-    contentArea.addEventListener('click', function(event) {
-        const header = event.target.closest('.tile-header');
-        if (header) {
-            const tile = header.closest('.tile');
-            tile.classList.toggle('expanded');
-            header.querySelector('.toggle-btn').textContent = tile.classList.contains('expanded') ? '−' : '+';
-            return; // Prevent other actions
-        }
-
-        const addBtn = event.target.closest('.add-btn');
-        if (addBtn) {
-            const modalType = addBtn.dataset.modal;
-            if (modals[modalType]) {
-                // Ensure modal is in "add" mode
-                const modal = modals[modalType];
-                const form = modal.querySelector('.modal-form');
-                form.reset();
-                form.querySelector('input[name="id"]').value = '';
-                modal.querySelector('h2').textContent = `Add New ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`;
-                modal.classList.add('visible');
-            }
-            return; // Prevent other actions
-        }
-
-        const editBtn = event.target.closest('.edit-item-btn');
-        if (editBtn) {
-            const item = editBtn.closest('.profile-item');
-            openModalForEdit(item.dataset.id, item.dataset.type);
-            return; // Prevent other actions
-        }
-
-        const removeBtn = event.target.closest('.remove-item-btn');
-        if (removeBtn) {
-            const item = removeBtn.closest('.profile-item');
-            itemToDelete = { id: item.dataset.id, type: item.dataset.type };
-            modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
-            modals.confirm.classList.add('visible');
-        }
-    });
-
-    // --- Modal & Form Logic ---
-    function setupForm(modalType, fetchFunction, createHTML) {
-        const modal = modals[modalType];
+    function setupGenericForm(modal, onSuccessfulSubmit) {
         if (!modal) return;
         const form = modal.querySelector('.modal-form');
+        if (!form) return;
 
         const closeModal = () => {
             modal.classList.remove('visible');
-            // A small delay to allow the animation to finish before resetting
             setTimeout(() => {
                 form.reset();
-                form.querySelector('input[name="id"]').value = ''; // Clear ID
-                 // Reset any disabled fields
+                if (form.querySelector('input[name="id"]')) {
+                    form.querySelector('input[name="id"]').value = '';
+                }
                 if (form.id === 'experience-form') {
                     form.querySelector('#end-date').disabled = false;
                 }
@@ -223,28 +334,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        if (form.id === 'experience-form') {
-            form.querySelector('#present-checkbox')?.addEventListener('change', function() {
-                const endDateInput = form.querySelector('#end-date');
-                endDateInput.disabled = this.checked;
-                if (this.checked) endDateInput.value = '';
-            });
-        }
-
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
+
+            // Handle specific form data adjustments
+            if (form.id === 'experience-form') data.is_present = formData.has('is_present');
+            if (form.id === 'account-settings-form') delete data.email; // Email not editable
+
             const id = data.id;
-
-            // Ensure checkbox value is boolean
-            if (form.id === 'experience-form') {
-                data.is_present = formData.has('is_present');
-            }
-
             const isEdit = id && id !== '';
-            const method = isEdit ? 'PUT' : 'POST';
-            const url = isEdit ? `/api/${modalType}s/${id}` : `/api/${modalType}s`;
+            let url, method;
+
+            if (form.id === 'account-settings-form') {
+                url = '/api/account';
+                method = 'PUT';
+            } else {
+                const modalType = modal.id.split('-')[0];
+                method = isEdit ? 'PUT' : 'POST';
+                url = isEdit ? `/api/${modalType}s/${id}` : `/api/${modalType}s`;
+            }
 
             try {
                 const response = await fetch(url, {
@@ -252,41 +362,57 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || `Failed to ${isEdit ? 'update' : 'create'} ${modalType}`);
+                    throw new Error(errorData.message || `Operation failed.`);
                 }
-
                 closeModal();
-                fetchAndDisplay(modalType, `${modalType}-list`, createHTML);
-
+                if(onSuccessfulSubmit) {
+                   onSuccessfulSubmit();
+                }
             } catch (error) {
-                console.error(`Form submission error for ${modalType}:`, error);
+                console.error(`Form submission error for ${form.id}:`, error);
                 alert(error.message);
             }
         });
     }
-    setupForm('experience', fetchAndDisplay, createExperienceHTML);
-    setupForm('certificate', fetchAndDisplay, createCertificateHTML);
-    setupForm('degree', fetchAndDisplay, createDegreeHTML);
 
-    // --- Confirmation Modal Logic ---
-    modals.confirm?.addEventListener('click', async function(event) {
-        if (event.target === this || event.target.matches('.modal-cancel-btn')) {
-            this.classList.remove('visible');
-            itemToDelete = { id: null, type: null };
-        }
-        if (event.target.matches('#confirm-delete-action-btn')) {
-            if (!itemToDelete.id || !itemToDelete.type) return;
-            const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
-            if (response.ok) {
-                document.querySelector(`.profile-item[data-id="${itemToDelete.id}"][data-type="${itemToDelete.type}"]`)?.remove();
-            } else {
-                alert(`Failed to remove ${itemToDelete.type}.`);
+    // Setup all modal forms
+    setupGenericForm(modals.experience, () => fetchAndDisplay('experience', 'experience-list', createExperienceHTML));
+    setupGenericForm(modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
+    setupGenericForm(modals.degree, () => fetchAndDisplay('degree', 'degree-list', createDegreeHTML));
+    setupGenericForm(modals.account, () => alert('Account updated successfully!'));
+
+    // Handle special UI logic within specific modals
+    if (modals.experience) {
+        modals.experience.querySelector('#present-checkbox')?.addEventListener('change', function() {
+            const endDateInput = modals.experience.querySelector('#end-date');
+            endDateInput.disabled = this.checked;
+            if (this.checked) endDateInput.value = '';
+        });
+    }
+
+    // Confirmation Modal Logic
+    if (modals.confirm) {
+        modals.confirm.addEventListener('click', async function(event) {
+            if (event.target === this || event.target.matches('.modal-cancel-btn, .modal-close-btn')) {
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
             }
-            this.classList.remove('visible');
-            itemToDelete = { id: null, type: null };
-        }
-    });
+            if (event.target.matches('#confirm-delete-action-btn')) {
+                if (!itemToDelete.id || !itemToDelete.type) return;
+                const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
+                if (response.ok) {
+                   loadProfileContent(); // Easiest way to reflect removal is to reload the section
+                } else {
+                    alert(`Failed to remove ${itemToDelete.type}.`);
+                }
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
+            }
+        });
+    }
+
+    // --- Initial Load ---
+    loadHomeContent();
 });

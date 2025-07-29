@@ -1,10 +1,161 @@
-body, html {
-    margin: 0;
-    padding: 0;
-    font-family: sans-serif;
-    background-color: #f4f4f9;
+/* --- Google-Inspired Dark Theme --- */
+/* :root variables define the color palette for the entire site. */
+:root {
+    --bg-primary: #1f1f1f;
+    --bg-secondary: #2a2a2a;
+    --bg-tertiary: #3c4043;
+    --text-primary: #e8eaed;
+    --text-secondary: #969ba1;
+    --accent-primary: #8ab4f8;
+    --accent-primary-darker: #202124;
+    --border-color: #424242;
+    --danger-color: #f28b82;
+    --danger-background: rgba(242, 139, 130, 0.1);
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
+/* --- Global & Body Styles --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* --- Auth Pages (Login, Signup, Index) --- */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--bg-secondary);
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.auth-container h1 {
+    font-size: 2.5rem;
+    margin: 0 0 1rem;
+}
+
+.auth-container h2 {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin: 0 0 2.5rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.auth-form input {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px 14px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
+}
+
+.buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.flashes {
+    list-style: none;
+    padding: 1rem;
+    margin: 0 0 1rem 0;
+    text-align: left;
+    border-radius: 4px;
+    background-color: var(--danger-background);
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+
+/* --- Button Styles --- */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-align: center;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background-color: var(--accent-primary);
+    color: var(--accent-primary-darker);
+}
+.btn-primary:hover {
+    background-color: #a6c9fb;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+.btn-secondary:hover {
+    background-color: #4a4e52;
+    text-decoration: none;
+}
+
+.btn-danger {
+    background-color: var(--danger-background);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+.btn-danger:hover {
+    background-color: rgba(242, 139, 130, 0.2);
+    text-decoration: none;
+}
+
+/* --- Dashboard --- */
 .dashboard-container {
     display: flex;
     height: 100vh;
@@ -12,17 +163,21 @@ body, html {
 
 .sidebar {
     width: 250px;
-    background-color: #333;
-    color: white;
+    background-color: var(--bg-secondary);
     padding: 20px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    border-right: 1px solid var(--border-color);
 }
 
 .sidebar h2 {
     text-align: center;
-    margin-bottom: 30px;
+    margin: 0 0 30px;
+    font-weight: 500;
+}
+
+.sidebar nav {
+    flex-grow: 1;
 }
 
 .sidebar nav ul {
@@ -30,57 +185,46 @@ body, html {
     padding: 0;
 }
 
-.sidebar nav ul li a {
-    color: white;
+.sidebar nav a {
+    color: var(--text-secondary);
     text-decoration: none;
     display: block;
-    padding: 10px 20px;
+    padding: 10px 15px;
     border-radius: 5px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+    transition: all 0.2s ease;
 }
 
-.sidebar nav ul li a:hover {
-    background-color: #575757;
-}
-
-.logout-section a {
-    color: white;
+.sidebar nav a:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
     text-decoration: none;
-    display: block;
-    padding: 10px 20px;
-    border-radius: 5px;
-    background-color: #d9534f;
-    text-align: center;
 }
 
-.logout-section a:hover {
-    background-color: #c9302c;
+.logout-section .btn {
+    width: 100%;
 }
 
 .main-content {
     flex-grow: 1;
-    padding: 20px;
+    padding: 20px 40px;
     overflow-y: auto;
 }
 
-.main-content header {
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
+.main-content h1 {
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding-bottom: 1rem;
+    margin: 0 0 2rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
-#content-area h1 {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-/* Tile Styles */
+/* --- Tile & Content Styles --- */
 .tile {
-    background-color: white;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     overflow: hidden;
 }
@@ -91,8 +235,7 @@ body, html {
     align-items: center;
     padding: 15px 20px;
     cursor: pointer;
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .tile-header h3 {
@@ -101,81 +244,120 @@ body, html {
 }
 
 .toggle-btn {
-    background-color: #333;
-    color: white;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
     border: none;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 1.2em;
-    line-height: 24px;
+    width: 28px;
+    height: 28px;
+    font-size: 1.5em;
+    line-height: 28px;
     text-align: center;
     cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.tile.expanded .toggle-btn {
+    transform: rotate(45deg);
 }
 
 .tile-content {
     max-height: 0;
     overflow: hidden;
     padding: 0 20px;
-    transition: max-height 0.1s ease-out, padding 0.1s ease-out;
+    transition: max-height 0.2s ease-out, padding 0.2s ease-out;
 }
 
 .tile.expanded .tile-content {
-    max-height: 1000px; /* Increased max-height for longer lists */
-    padding: 15px 20px;
-    transition: max-height 0.2s ease-in, padding 0.2s ease-in;
+    max-height: 1500px;
+    padding: 20px;
+    transition: max-height 0.3s ease-in, padding 0.3s ease-in;
 }
 
 .add-btn {
     background: none;
     border: none;
-    padding: 0;
     font-size: 0.9em;
-    color: #007bff;
+    font-weight: 500;
+    color: var(--accent-primary);
     cursor: pointer;
-    text-decoration: none;
-    margin-top: 10px;
-    display: inline-block;
+    padding: 5px 0;
 }
 
-.add-btn:hover {
-    text-decoration: underline;
+.profile-item {
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 0;
+    display: flex;
+    gap: 15px;
 }
 
-/* Modal Styles */
+.item-details h4 { font-size: 1.1em; margin: 0 0 5px; }
+.item-details p { margin: 0 0 4px; font-size: 0.95em; color: var(--text-secondary); }
+.item-details .item-meta { font-size: 0.85em; color: #80868b; }
+
+.item-actions { display: flex; align-items: center; gap: 12px; }
+
+.edit-item-btn, .remove-item-btn, .edit-account-btn {
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.edit-item-btn:hover, .edit-account-btn:hover {
+    color: var(--accent-primary);
+}
+
+.remove-item-btn:hover { color: var(--danger-color); }
+
+.tile-footer {
+    /* Adds vertical spacing and indents the link by 20px to match the content above it. */
+    padding: 15px 0;
+}
+
+.tile-footer .add-btn {
+    /* Overrides the generic button padding to make it look like a simple text link. */
+    padding: 0;
+}
+
+/* --- Modal Styles --- */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.75);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    overflow-y: auto;
+
+    /* These lines hide the modal by default */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    overflow-y: auto; /* Allow scrolling for long modals */
 }
 
 .modal-overlay.visible {
+    /* This makes the modal visible when triggered by JavaScript */
     opacity: 1;
     visibility: visible;
 }
 
 .modal-content {
-    background: white;
-    padding: 25px 30px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
     width: 90%;
     max-width: 550px;
     position: relative;
+    margin: 20px 0;
+    padding: 25px 30px;
+
+    /* A subtle animation for the modal appearing */
     transform: translateY(-20px);
     transition: transform 0.3s ease;
-    margin: 20px 0;
 }
 
 .modal-overlay.visible .modal-content {
@@ -188,167 +370,106 @@ body, html {
     right: 15px;
     font-size: 1.8rem;
     font-weight: bold;
-    color: #aaa;
+    color: var(--text-secondary);
     cursor: pointer;
     border: none;
     background: none;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
 }
 
 .modal-content h2 {
     margin-top: 0;
-    margin-bottom: 20px;
-    color: #333;
+    margin-bottom: 25px;
 }
 
-/* Generic Form Styles */
-.modal-form .form-group {
-    margin-bottom: 15px;
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.form-group.full-width {
+    grid-column: 1 / -1;
 }
 
-.modal-form label {
+.modal-form label, #account-form label {
     display: block;
     margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
-.modal-form input[type="text"],
-.modal-form input[type="month"],
-.modal-form select {
+.modal-form input, .modal-form select, .modal-form textarea,
+#account-form input, #account-form select, #account-form textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    box-sizing: border-box;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-.form-row {
-    display: flex;
-    gap: 20px;
+.modal-form input:focus, .modal-form select:focus, .modal-form textarea:focus,
+#account-form input:focus, #account-form select:focus, #account-form textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
 }
 
-.form-row .form-group {
-    flex: 1;
-}
-
-.checkbox-group {
-    display: flex;
-    align-items: center;
-}
-
-.checkbox-group input {
-    margin-right: 10px;
-}
-
-.checkbox-group label {
-    margin-bottom: 0;
-    font-weight: normal;
+#account-form input:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
 }
 
 .form-actions {
+    grid-column: 1 / -1;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 25px;
+    margin-top: 1rem;
 }
 
-.btn {
+.checkbox-group label {
+    font-weight: 400;
+    color: var(--text-primary);
+}
+
+/* --- Tab Styles --- */
+.tab-panel {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
     padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1rem;
+    margin-bottom: -1px; /* Aligns with the bottom border */
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
 }
 
-.btn-primary { background-color: #007bff; color: white; }
-.btn-secondary { background-color: #6c757d; color: white; }
-.btn-danger { background-color: #d9534f; color: white; }
-.btn-danger:hover { background-color: #c9302c; }
-
-/* Styles for dynamically added profile items */
-.profile-item {
-    border-bottom: 1px solid #e0e0e0;
-    padding: 15px 0;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 15px;
+.tab-button:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
 }
 
-.profile-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 5px;
+.tab-button.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
 }
 
-.item-details {
-    flex-grow: 1;
+.tab-pane {
+    display: none; /* Hidden by default */
 }
 
-.item-details h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.1em;
-    color: #333;
-}
-
-.item-details p {
-    margin: 0 0 4px 0;
-    font-size: 0.95em;
-    color: #555;
-}
-
-.item-details .item-meta {
-    font-size: 0.85em;
-    color: #777;
-}
-
-.remove-item-btn {
-    background: none;
-    border: none;
-    color: #ccc;
-    font-size: 1.6rem;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.2s ease-in-out;
-}
-
-.remove-item-btn:hover {
-    color: #d9534f;
-}
-
-#confirm-remove-modal .modal-content {
-    max-width: 450px;
-}
-
-/* Add these styles to the end of your dashboard.css file */
-
-.item-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px; /* Provides space between the icons */
-}
-
-/* Generic style for both icons */
-.edit-item-btn, .remove-item-btn {
-    background: none;
-    border: none;
-    color: #b0b0b0; /* A neutral, less prominent color */
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 0 5px;
-    line-height: 1;
-    transition: color 0.2s ease-in-out;
-}
-
-/* Specific hover color for the edit icon */
-.edit-item-btn:hover {
-    color: #007bff; /* Blue */
-}
-
-/* The remove icon already has a hover effect defined, this ensures it remains */
-.remove-item-btn:hover {
-    color: #d9534f; /* Red */
+.tab-pane.active {
+    display: block; /* Shown when active */
 }

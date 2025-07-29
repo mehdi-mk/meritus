@@ -32,14 +32,41 @@ login_manager.login_view = 'login'
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
+# class User(UserMixin, db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     email = db.Column(db.String(100), unique=True)
+#     password = db.Column(db.String(200))
+#     confirmed = db.Column(db.Boolean, nullable=False, default=False)
+#     experiences = db.relationship('Experience', backref='user', lazy=True, cascade="all, delete-orphan")
+#     certificates = db.relationship('Certificate', backref='user', lazy=True, cascade="all, delete-orphan")
+#     degrees = db.relationship('Degree', backref='user', lazy=True, cascade="all, delete-orphan")
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
     confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    phone = db.Column(db.String(50))
+    country = db.Column(db.String(100))
+    city = db.Column(db.String(100))
+    bio = db.Column(db.Text)
     experiences = db.relationship('Experience', backref='user', lazy=True, cascade="all, delete-orphan")
     certificates = db.relationship('Certificate', backref='user', lazy=True, cascade="all, delete-orphan")
     degrees = db.relationship('Degree', backref='user', lazy=True, cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'phone': self.phone,
+            'country': self.country,
+            'city': self.city,
+            'bio': self.bio
+        }
 
 class Experience(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -372,6 +399,26 @@ def delete_degree(id):
     db.session.delete(degree)
     db.session.commit()
     return jsonify({'message': 'Degree deleted successfully'}), 200
+
+# --- API Endpoints for Account ---
+@app.route('/api/account', methods=['GET'])
+@login_required
+def get_account():
+    return jsonify(current_user.to_dict())
+
+@app.route('/api/account', methods=['PUT'])
+@login_required
+def update_account():
+    data = request.get_json()
+    user = User.query.get(current_user.id)
+    user.first_name = data.get('first_name', user.first_name)
+    user.last_name = data.get('last_name', user.last_name)
+    user.phone = data.get('phone', user.phone)
+    user.country = data.get('country', user.country)
+    user.city = data.get('city', user.city)
+    user.bio = data.get('bio', user.bio)
+    db.session.commit()
+    return jsonify(user.to_dict())
 
 
 if __name__ == '__main__':
