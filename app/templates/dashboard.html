@@ -15,7 +15,7 @@
                 <nav>
                     <ul>
                         <li><a href="#" data-content="Home">Home</a></li>
-                        <li><a href="#" data-content="Education">Education</a></li>
+                        <li><a href="#" data-content="Learning">Learning</a></li>
                         <li><a href="#" data-content="Job">Job</a></li>
                         <li><a href="#" data-content="Profile">Profile</a></li>
                         <li><a href="#" data-content="Settings">Settings</a></li>
@@ -34,6 +34,48 @@
             <section id="content-area">
                 <h1>Home</h1>
             </section>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Skill -->
+    <div id="skill-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Add New Skill</h2>
+            <form id="skill-form" class="modal-form">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label>Type</label>
+                    <div class="radio-group">
+                        <input type="radio" id="skill-type-behavioral" name="type" value="Behavioral" checked>
+                        <label for="skill-type-behavioral">Behavioral</label>
+                        <input type="radio" id="skill-type-conceptual" name="type" value="Conceptual">
+                        <label for="skill-type-conceptual">Conceptual</label>
+                        <input type="radio" id="skill-type-technical" name="type" value="Technical">
+                        <label for="skill-type-technical">Technical</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="skill-title">Title</label>
+                    <input type="text" id="skill-title" name="title" required>
+<!--                    <label for="skill-status">Status</label>-->
+<!--                    <select id="skill-status" name="status" required>-->
+<!--                        <option value="Claimed">Claimed</option>-->
+<!--                        <option value="Attested">Attested</option>-->
+<!--                        <option value="Confirmed">Confirmed</option>-->
+<!--                    </select>-->
+                </div>
+                <div class="form-group">
+                    <label>Acquired at (select at least one):</label>
+                    <div id="acquired-at-sources" class="checkbox-list">
+                        <!-- Dynamic content will be loaded here -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 

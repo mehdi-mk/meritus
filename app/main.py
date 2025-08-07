@@ -32,15 +32,6 @@ login_manager.login_view = 'login'
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# class User(UserMixin, db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     email = db.Column(db.String(100), unique=True)
-#     password = db.Column(db.String(200))
-#     confirmed = db.Column(db.Boolean, nullable=False, default=False)
-#     experiences = db.relationship('Experience', backref='user', lazy=True, cascade="all, delete-orphan")
-#     certificates = db.relationship('Certificate', backref='user', lazy=True, cascade="all, delete-orphan")
-#     degrees = db.relationship('Degree', backref='user', lazy=True, cascade="all, delete-orphan")
-
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
@@ -66,6 +57,80 @@ class User(UserMixin, db.Model):
             'country': self.country,
             'city': self.city,
             'bio': self.bio
+        }
+
+# skill_sources = db.Table('skill_sources',
+#                          db.Column('skill_id', db.Integer, db.ForeignKey('skill.id'), primary_key=True),
+#                          db.Column('source_id', db.Integer, primary_key=True),
+#                          db.Column('source_type', db.String(20), primary_key=True)
+#                          # 'experience', 'certificate', or 'degree'
+#                          )
+
+class SkillSource(db.Model):
+    __tablename__ = 'skill_sources'
+
+    skill_id = db.Column(db.Integer, db.ForeignKey('skill.id'), primary_key=True)
+    source_id = db.Column(db.Integer, primary_key=True)
+    source_type = db.Column(db.String(20), primary_key=True)
+
+class Skill(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Claimed')
+    attestation_count = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    skill_sources = db.relationship('SkillSource', backref='skill', lazy=True, cascade="all, delete-orphan")
+
+    def get_acquired_at_sources(self):
+        """Get all sources where this skill was acquired"""
+        sources = []
+
+        for skill_source in self.skill_sources:
+            source_id = skill_source.source_id
+            source_type = skill_source.source_type
+
+            if source_type == 'experience':
+                source = Experience.query.get(source_id)
+                if source:
+                    sources.append({
+                        'id': source.id,
+                        'type': 'Experience',
+                        'title': source.position_title
+                    })
+            elif source_type == 'certificate':
+                source = Certificate.query.get(source_id)
+                if source:
+                    sources.append({
+                        'id': source.id,
+                        'type': 'Certificate',
+                        'title': source.title
+                    })
+            elif source_type == 'degree':
+                source = Degree.query.get(source_id)
+                if source:
+                    sources.append({
+                        'id': source.id,
+                        'type': 'Degree',
+                        'title': f"{source.degree} in {source.field_of_study}"
+                    })
+
+        return sources
+
+    def to_dict(self):
+        status_display = self.status
+        if self.status == 'Attested' and self.attestation_count > 0:
+            status_display = f"Attested by {self.attestation_count} person{'s' if self.attestation_count != 1 else ''}"
+
+        return {
+            "id": self.id,
+            "type": self.type,
+            "title": self.title,
+            "status": self.status,
+            "status_display": status_display,
+            "attestation_count": self.attestation_count,
+            "acquired_at_sources": self.get_acquired_at_sources(),
         }
 
 class Experience(db.Model):
@@ -220,6 +285,144 @@ def logout():
 # --- Helper for parsing dates ---
 def parse_date(date_str):
     return datetime.strptime(date_str, '%Y-%m').date() if date_str else None
+
+# --- API Endpoints for Skills ---
+# Endpoint to get user's profile items for skill form
+@app.route('/api/user/profile-items', methods=['GET'])
+@login_required
+def get_user_profile_items():
+    experiences = Experience.query.filter_by(user_id=current_user.id).all()
+    certificates = Certificate.query.filter_by(user_id=current_user.id).all()
+    degrees = Degree.query.filter_by(user_id=current_user.id).all()
+
+    items = []
+
+    for exp in experiences:
+        items.append({
+            'id': exp.id,
+            'type': 'experience',
+            'title': exp.position_title,
+            'display': f"{exp.position_title} (Experience)"
+        })
+
+    for cert in certificates:
+        items.append({
+            'id': cert.id,
+            'type': 'certificate',
+            'title': cert.title,
+            'display': f"{cert.title} (Certificate)"
+        })
+
+    for degree in degrees:
+        items.append({
+            'id': degree.id,
+            'type': 'degree',
+            'title': f"{degree.degree} in {degree.field_of_study}",
+            'display': f"{degree.degree} in {degree.field_of_study} (Degree)"
+        })
+
+    return jsonify(items)
+
+@app.route('/api/skills', methods=['POST'])
+@login_required
+def add_skill():
+    data = request.get_json()
+
+    if data is None:
+        return jsonify({"error": "No JSON data received"}), 400
+
+    acquired_at_sources = data.get('acquired_at_sources', [])
+
+    if not acquired_at_sources:
+        return jsonify({"error": "At least one source where the skill was acquired is required"}), 400
+
+    try:
+        new_skill = Skill(
+            type=data['type'],
+            title=data['title'],
+            status='Claimed',
+            user_id=current_user.id
+        )
+        db.session.add(new_skill)
+        db.session.flush()  # Get the skill ID
+
+        # Add source relationships using the SkillSource model
+        for source in acquired_at_sources:
+            skill_source = SkillSource(
+                skill_id=new_skill.id,
+                source_id=source['id'],
+                source_type=source['type']
+            )
+            db.session.add(skill_source)
+
+        db.session.commit()
+        return jsonify(new_skill.to_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/skills', methods=['GET'])
+@login_required
+def get_skills():
+    skills = Skill.query.filter_by(user_id=current_user.id).all()
+    return jsonify([s.to_dict() for s in skills])
+
+@app.route('/api/skills/<int:skill_id>', methods=['GET'])
+@login_required
+def get_skill(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+    if skill.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify(skill.to_dict())
+
+@app.route('/api/skills/<int:skill_id>', methods=['PUT'])
+@login_required
+def update_skill(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+
+    if skill.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    if skill.status not in ['Claimed', 'Attested', 'Validated']:
+        return jsonify({"error": "Invalid status"}), 400
+
+    data = request.get_json()
+    acquired_at_sources = data.get('acquired_at_sources', [])
+
+    skill.type = data.get('type', skill.type)
+    skill.title = data.get('title', skill.title)
+    skill.status = data.get('status', skill.status)
+
+    try:
+        # Remove existing source relationships
+        SkillSource.query.filter_by(skill_id=skill.id).delete()
+
+        # Add new source relationships
+        for source in acquired_at_sources:
+            skill_source = SkillSource(
+                skill_id=skill.id,
+                source_id=source['id'],
+                source_type=source['type']
+            )
+            db.session.add(skill_source)
+
+        db.session.commit()
+        return jsonify(skill.to_dict())
+
+    except Exception as e:
+        db.session.rollback()
+        print("Error updating skill:", str(e))
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/skills/<int:skill_id>', methods=['DELETE'])
+@login_required
+def delete_skill(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+    if skill.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    db.session.delete(skill)
+    db.session.commit()
+    return jsonify({"message": "Skill deleted successfully"})
 
 # --- API Endpoints for Experience ---
 @app.route('/api/experiences', methods=['GET'])

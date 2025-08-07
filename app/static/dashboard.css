@@ -473,3 +473,115 @@ h1, h2, h3, h4, h5, h6 {
 .tab-pane.active {
     display: block; /* Shown when active */
 }
+
+/* Radio button group styling */
+.radio-group {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+}
+
+.radio-group input[type="radio"] {
+    display: none; /* Hide the default radio button */
+}
+
+.radio-group label {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.radio-group input[type="radio"]:checked + label {
+    background-color: var(--accent-primary);
+    color: var(--accent-primary-darker);
+    font-weight: 500;
+}
+
+/* --- Skill Status Styles --- */
+.skill-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.skill-status.claimed {
+    background-color: white;
+    color: #000;
+}
+
+.skill-status.attested {
+    background-color: #ffd700;
+    color: #000;
+}
+
+/* Optional: Add some margin to separate status from other content */
+.item-details .skill-status {
+    margin-top: 5px;
+}
+
+/* --- Checkbox List Styles --- */
+.checkbox-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px;
+    background-color: var(--bg-primary);
+}
+
+.checkbox-list .checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.checkbox-list .checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-list .checkbox-item input[type="checkbox"] {
+    margin-right: 10px;
+    width: auto;
+}
+
+.checkbox-list .checkbox-item label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: 400;
+    color: var(--text-primary);
+}
+
+.checkbox-list.empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* --- Skill Sources Display --- */
+.skill-sources {
+    margin-top: 5px;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+
+.skill-sources .source-item {
+    display: inline-block;
+    background-color: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin: 2px;
+    font-size: 0.8em;
+}

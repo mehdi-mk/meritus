@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Element & State Management ---
     const contentArea = document.getElementById('content-area');
     const modals = {
+        skill: document.getElementById('skill-modal'),
         experience: document.getElementById('experience-modal'),
         certificate: document.getElementById('certificate-modal'),
         degree: document.getElementById('degree-modal'),
@@ -13,10 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Navigation & Content Loading ---
     const contentLoaders = {
         'Home': loadHomeContent,
+        'Learning': () => contentArea.innerHTML = '<h1>Learning</h1>',
         'Profile': loadProfileContent,
         'Settings': loadSettingsContent,
         'Job': loadJobContent,
-        // Add other sections like 'Education', 'Help' if they have specific loaders
+        'Help': () => contentArea.innerHTML = '<h1>Help</h1>'
     };
 
     document.querySelector('.sidebar nav').addEventListener('click', (event) => {
@@ -70,6 +72,20 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="profile-section">
                 <div class="tile">
                     <div class="tile-header">
+                        <h2>Skills</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="skill-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="skill">Add Skill</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
                         <h2>Experience</h2>
                         <div class="tile-actions">
                             <button class="toggle-btn">+</button>
@@ -113,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         await Promise.all([
+            fetchAndDisplay('skill', 'skill-list', createSkillHTML),
             fetchAndDisplay('experience', 'experience-list', createExperienceHTML),
             fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML),
             fetchAndDisplay('degree', 'degree-list', createDegreeHTML)
@@ -152,6 +169,66 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- HTML Generation Functions ---
+
+    function createSkillHTML(skill) {
+
+        const statusClass = skill.status.toLowerCase();
+        const statusDisplay = skill.status_display || skill.status;
+
+        const sourcesHTML = skill.acquired_at_sources && skill.acquired_at_sources.length > 0
+            ? `<div class="skill-sources">
+                 Acquired at: ${skill.acquired_at_sources.map(source =>
+                     `<span class="source-item">${source.title} (${source.type})</span>`
+                 ).join('')}
+               </div>`
+            : '';
+
+        return `
+            <div class="profile-item skill-item" data-id="${skill.id}" data-type="skill">
+                <div class="item-details">
+                    <h4>${skill.title}</h4>
+                    <p>${skill.type}</p>
+                    <span class="skill-status ${statusClass}">${statusDisplay}</span>
+                    ${sourcesHTML}
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+    }
+
+    // This function loads profile items for the skill form
+    async function loadProfileItemsForSkillForm() {
+        try {
+            const response = await fetch('/api/user/profile-items');
+            if (!response.ok) throw new Error('Failed to load profile items');
+
+            const items = await response.json();
+            const container = document.getElementById('acquired-at-sources');
+
+            if (items.length === 0) {
+                container.innerHTML = '<p class="empty">No experiences, certificates, or degrees found. Please add some first.</p>';
+                container.classList.add('empty');
+                return;
+            }
+
+            container.classList.remove('empty');
+            container.innerHTML = items.map(item => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="source-${item.type}-${item.id}"
+                           value="${item.id}" data-type="${item.type}">
+                    <label for="source-${item.type}-${item.id}">${item.display}</label>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading profile items:', error);
+            document.getElementById('acquired-at-sources').innerHTML =
+                '<p class="error">Error loading profile items. Please try again.</p>';
+        }
+    }
+
     function createExperienceHTML(exp) {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
         const location = [exp.city, exp.country].filter(Boolean).join(', ');
@@ -207,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
     }
 
+
     // --- Unified Event Delegation for Main Content Area ---
     contentArea.addEventListener('click', function(event) {
         const header = event.target.closest('.tile-header');
@@ -226,6 +304,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.reset();
                 form.querySelector('input[name="id"]').value = '';
                 modal.querySelector('h2').textContent = `Add New ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`;
+
+                // ONLY call this for skill modals
+                if (modalType === 'skill') {
+                    loadProfileItemsForSkillForm();
+                }
+
                 modal.classList.add('visible');
             }
             return;
@@ -265,8 +349,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = modal.querySelector('.modal-form');
             form.reset();
 
+            // Special handling for skill modal
+            if (type === 'skill') {
+                await loadProfileItemsForSkillForm();
+
+                // Pre-select the acquired at sources
+                if (itemData.acquired_at_sources) {
+                    itemData.acquired_at_sources.forEach(source => {
+                        const checkbox = form.querySelector(`input[value="${source.id}"][data-type="${source.type.toLowerCase()}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            }
+
             for (const key in itemData) {
-                if (Object.prototype.hasOwnProperty.call(itemData, key)) {
+                if (Object.prototype.hasOwnProperty.call(itemData, key) && key !== 'acquired_at_sources') {
                     const input = form.querySelector(`[name="${key}"]`);
                     if (input) {
                         input.type === 'checkbox' ? (input.checked = itemData[key]) : (input.value = itemData[key]);
@@ -336,18 +433,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
 
+            // Check if this is a skill form by checking both form ID and modal ID
+            const isSkillForm = this.id === 'skill-form' || modal.id === 'skill-modal';
+
+            if (isSkillForm) {
+                const checkedSources = Array.from(this.querySelectorAll('#acquired-at-sources input[type="checkbox"]:checked'));
+
+                if (checkedSources.length === 0) {
+                    alert('Please select at least one source where you acquired this skill.');
+                    return;
+                }
+
+                data.acquired_at_sources = checkedSources.map(cb => ({
+                    id: parseInt(cb.value),
+                    type: cb.dataset.type
+                }));
+            }
+
             // Handle specific form data adjustments
-            if (form.id === 'experience-form') data.is_present = formData.has('is_present');
-            if (form.id === 'account-settings-form') delete data.email; // Email not editable
+            if (this.id === 'experience-form') data.is_present = formData.has('is_present');
+            if (this.id === 'account-settings-form') delete data.email;
 
             const id = data.id;
             const isEdit = id && id !== '';
             let url, method;
 
-            if (form.id === 'account-settings-form') {
+            if (this.id === 'account-settings-form') {
                 url = '/api/account';
                 method = 'PUT';
             } else {
@@ -362,26 +477,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
+
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || `Operation failed.`);
+                    throw new Error(errorData.error || errorData.message || `Operation failed.`);
                 }
+
                 closeModal();
                 if(onSuccessfulSubmit) {
                    onSuccessfulSubmit();
                 }
             } catch (error) {
-                console.error(`Form submission error for ${form.id}:`, error);
+                console.error(`Form submission error for ${this.id}:`, error);
                 alert(error.message);
             }
         });
     }
 
-    // Setup all modal forms
+    // Setup all modals when DOM loads
+    setupGenericForm(modals.skill, () => fetchAndDisplay('skill', 'skill-list', createSkillHTML));
     setupGenericForm(modals.experience, () => fetchAndDisplay('experience', 'experience-list', createExperienceHTML));
     setupGenericForm(modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
     setupGenericForm(modals.degree, () => fetchAndDisplay('degree', 'degree-list', createDegreeHTML));
-    setupGenericForm(modals.account, () => alert('Account updated successfully!'));
+    setupGenericForm(modals.account);
 
     // Handle special UI logic within specific modals
     if (modals.experience) {
