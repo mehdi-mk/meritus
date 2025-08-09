@@ -3,6 +3,7 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
+from flask_migrate import Migrate
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -27,6 +28,8 @@ app.config['MAIL_PASSWORD'] = None
 app.config['MAIL_DEFAULT_SENDER'] = 'your-dev-email@example.com'
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 mail = Mail(app)
@@ -43,6 +46,10 @@ class User(UserMixin, db.Model):
     country = db.Column(db.String(100))
     city = db.Column(db.String(100))
     bio = db.Column(db.Text)
+    user_type = db.Column(db.String(20), default='job_seeker')  # job_seeker, employer, both
+    company_name = db.Column(db.String(150))
+    company_description = db.Column(db.Text)
+    industry = db.Column(db.String(100))
     experiences = db.relationship('Experience', backref='user', lazy=True, cascade="all, delete-orphan")
     certificates = db.relationship('Certificate', backref='user', lazy=True, cascade="all, delete-orphan")
     degrees = db.relationship('Degree', backref='user', lazy=True, cascade="all, delete-orphan")
@@ -56,7 +63,11 @@ class User(UserMixin, db.Model):
             'phone': self.phone,
             'country': self.country,
             'city': self.city,
-            'bio': self.bio
+            'bio': self.bio,
+            'user_type': self.user_type,
+            'company_name': self.company_name,
+            'company_description': self.company_description,
+            'industry': self.industry
         }
 
 # skill_sources = db.Table('skill_sources',
@@ -206,6 +217,117 @@ class Degree(db.Model):
             'gpa': self.gpa
         }
 
+
+class JobPosting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    company_name = db.Column(db.String(150), nullable=False)
+    location = db.Column(db.String(200))
+    salary_min = db.Column(db.Integer)
+    salary_max = db.Column(db.Integer)
+    employment_type = db.Column(db.String(50))  # Full-Time, Part-Time, Contract, etc.
+    employment_arrangement = db.Column(db.String(50))  # On-Site, Remote, Hybrid
+    status = db.Column(db.String(20), nullable=False, default='active')  # active, closed, draft
+    application_deadline = db.Column(db.Date)
+    posted_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    poster = db.relationship('User', backref='job_postings')
+    required_skills = db.relationship('JobRequiredSkill', backref='job', cascade="all, delete-orphan")
+    required_experiences = db.relationship('JobRequiredExperience', backref='job', cascade="all, delete-orphan")
+    required_certificates = db.relationship('JobRequiredCertificate', backref='job', cascade="all, delete-orphan")
+    required_degrees = db.relationship('JobRequiredDegree', backref='job', cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'company_name': self.company_name,
+            'location': self.location,
+            'salary_min': self.salary_min,
+            'salary_max': self.salary_max,
+            'employment_type': self.employment_type,
+            'employment_arrangement': self.employment_arrangement,
+            'status': self.status,
+            'application_deadline': self.application_deadline.strftime(
+                '%Y-%m-%d') if self.application_deadline else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'required_skills': [skill.to_dict() for skill in self.required_skills],
+            'required_experiences': [exp.to_dict() for exp in self.required_experiences],
+            'required_certificates': [cert.to_dict() for cert in self.required_certificates],
+            'required_degrees': [degree.to_dict() for degree in self.required_degrees]
+        }
+
+
+class JobRequiredSkill(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    skill_title = db.Column(db.String(150), nullable=False)
+    skill_type = db.Column(db.String(50), nullable=False)  # Technical, Behavioral, Conceptual
+    is_required = db.Column(db.Boolean, default=True)  # Required vs Preferred
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'skill_title': self.skill_title,
+            'skill_type': self.skill_type,
+            'is_required': self.is_required
+        }
+
+
+class JobRequiredExperience(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    years_required = db.Column(db.Integer, nullable=False)
+    industry = db.Column(db.String(100))
+    role_title = db.Column(db.String(150))
+    is_required = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'years_required': self.years_required,
+            'industry': self.industry,
+            'role_title': self.role_title,
+            'is_required': self.is_required
+        }
+
+
+class JobRequiredCertificate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    certificate_title = db.Column(db.String(150), nullable=False)
+    issuer = db.Column(db.String(150))
+    is_required = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'certificate_title': self.certificate_title,
+            'issuer': self.issuer,
+            'is_required': self.is_required
+        }
+
+
+class JobRequiredDegree(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    degree_level = db.Column(db.String(100), nullable=False)  # Bachelor's, Master's, etc.
+    field_of_study = db.Column(db.String(150))
+    is_required = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'degree_level': self.degree_level,
+            'field_of_study': self.field_of_study,
+            'is_required': self.is_required
+        }
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -284,7 +406,17 @@ def logout():
 
 # --- Helper for parsing dates ---
 def parse_date(date_str):
-    return datetime.strptime(date_str, '%Y-%m').date() if date_str else None
+    if not date_str:
+        return None
+    try:
+        # Try parsing as YYYY-MM-DD first (from date input)
+        return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        try:
+            # Fallback to YYYY-MM format (for existing functionality)
+            return datetime.strptime(date_str, '%Y-%m').date()
+        except ValueError:
+            return None
 
 # --- API Endpoints for Skills ---
 # Endpoint to get user's profile items for skill form
@@ -622,6 +754,230 @@ def update_account():
     user.bio = data.get('bio', user.bio)
     db.session.commit()
     return jsonify(user.to_dict())
+
+
+# --- API Endpoints for Job Management ---
+@app.route('/api/jobs', methods=['POST'])
+@login_required
+def create_job():
+    data = request.get_json()
+
+    try:
+        new_job = JobPosting(
+            title=data['title'],
+            description=data['description'],
+            company_name=data['company_name'],
+            location=data.get('location'),
+            salary_min=data.get('salary_min'),
+            salary_max=data.get('salary_max'),
+            employment_type=data.get('employment_type'),
+            employment_arrangement=data.get('employment_arrangement'),
+            application_deadline=parse_date(data.get('application_deadline')),
+            posted_by=current_user.id,
+            status='active'
+        )
+
+        db.session.add(new_job)
+        db.session.flush()  # Get the job ID
+
+        # Add required skills
+        for skill in data.get('required_skills', []):
+            job_skill = JobRequiredSkill(
+                job_id=new_job.id,
+                skill_title=skill['title'],
+                skill_type=skill['type'],
+                is_required=skill.get('is_required', True)
+            )
+            db.session.add(job_skill)
+
+        # Add required experiences
+        for exp in data.get('required_experiences', []):
+            job_exp = JobRequiredExperience(
+                job_id=new_job.id,
+                years_required=exp['years_required'],
+                industry=exp.get('industry'),
+                role_title=exp.get('role_title'),
+                is_required=exp.get('is_required', True)
+            )
+            db.session.add(job_exp)
+
+        # Add required certificates
+        for cert in data.get('required_certificates', []):
+            job_cert = JobRequiredCertificate(
+                job_id=new_job.id,
+                certificate_title=cert['title'],
+                issuer=cert.get('issuer'),
+                is_required=cert.get('is_required', True)
+            )
+            db.session.add(job_cert)
+
+        # Add required degrees
+        for degree in data.get('required_degrees', []):
+            job_degree = JobRequiredDegree(
+                job_id=new_job.id,
+                degree_level=degree['level'],
+                field_of_study=degree.get('field_of_study'),
+                is_required=degree.get('is_required', True)
+            )
+            db.session.add(job_degree)
+
+        db.session.commit()
+        return jsonify(new_job.to_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/jobs', methods=['GET'])
+@login_required
+def get_jobs():
+    # Get jobs posted by current user (for employers)
+    jobs = JobPosting.query.filter_by(posted_by=current_user.id).order_by(JobPosting.created_at.desc()).all()
+    return jsonify([job.to_dict() for job in jobs])
+
+
+@app.route('/api/jobs/browse', methods=['GET'])
+@login_required
+def browse_jobs():
+    try:
+        # Query all job postings that are not 'Draft' or 'Archived'
+        jobs = JobPosting.query.filter(
+            JobPosting.status.notin_(['Draft', 'Archived'])
+        ).order_by(JobPosting.created_at.desc()).all()
+
+        return jsonify([job.to_dict() for job in jobs]), 200
+
+    except Exception as e:
+        # Log the exception for debugging
+        print(f"Error fetching browse jobs: {e}")
+        return jsonify({"error": "Failed to retrieve jobs"}), 500
+
+
+@app.route('/api/jobs/<int:job_id>', methods=['GET'])
+@login_required
+def get_job(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify(job.to_dict())
+
+
+@app.route('/api/jobs/<int:job_id>', methods=['PUT'])
+@login_required
+def update_job(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+
+    try:
+        # Update basic job info
+        job.title = data.get('title', job.title)
+        job.description = data.get('description', job.description)
+        job.company_name = data.get('company_name', job.company_name)
+        job.location = data.get('location', job.location)
+        job.salary_min = data.get('salary_min', job.salary_min)
+        job.salary_max = data.get('salary_max', job.salary_max)
+        job.employment_type = data.get('employment_type', job.employment_type)
+        job.employment_arrangement = data.get('employment_arrangement', job.employment_arrangement)
+        job.application_deadline = parse_date(data.get('application_deadline')) if data.get(
+            'application_deadline') else job.application_deadline
+        job.updated_at = datetime.utcnow()
+
+        # Remove existing requirements
+        JobRequiredSkill.query.filter_by(job_id=job.id).delete()
+        JobRequiredExperience.query.filter_by(job_id=job.id).delete()
+        JobRequiredCertificate.query.filter_by(job_id=job.id).delete()
+        JobRequiredDegree.query.filter_by(job_id=job.id).delete()
+
+        # Add updated requirements (same logic as create_job)
+        for skill in data.get('required_skills', []):
+            job_skill = JobRequiredSkill(
+                job_id=job.id,
+                skill_title=skill['title'],
+                skill_type=skill['type'],
+                is_required=skill.get('is_required', True)
+            )
+            db.session.add(job_skill)
+
+        for exp in data.get('required_experiences', []):
+            job_exp = JobRequiredExperience(
+                job_id=job.id,
+                years_required=exp['years_required'],
+                industry=exp.get('industry'),
+                role_title=exp.get('role_title'),
+                is_required=exp.get('is_required', True)
+            )
+            db.session.add(job_exp)
+
+        for cert in data.get('required_certificates', []):
+            job_cert = JobRequiredCertificate(
+                job_id=job.id,
+                certificate_title=cert['title'],
+                issuer=cert.get('issuer'),
+                is_required=cert.get('is_required', True)
+            )
+            db.session.add(job_cert)
+
+        for degree in data.get('required_degrees', []):
+            job_degree = JobRequiredDegree(
+                job_id=job.id,
+                degree_level=degree['level'],
+                field_of_study=degree.get('field_of_study'),
+                is_required=degree.get('is_required', True)
+            )
+            db.session.add(job_degree)
+
+        db.session.commit()
+        return jsonify(job.to_dict())
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/jobs/<int:job_id>', methods=['DELETE'])
+@login_required
+def delete_job(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    db.session.delete(job)
+    db.session.commit()
+    return jsonify({"message": "Job deleted successfully"})
+
+
+@app.route('/api/jobs/<int:job_id>/status', methods=['PUT'])
+@login_required
+def update_job_status(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    status = data.get('status')
+
+    if status not in ['active', 'closed', 'draft']:
+        return jsonify({"error": "Invalid status"}), 400
+
+    job.status = status
+    job.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({"message": f"Job status updated to {status}"})
+
+
+@app.route('/migrate-db')
+def migrate_db():
+    """Temporary route to create new tables - remove after use"""
+    try:
+        db.create_all()
+        return "Database tables created successfully!"
+    except Exception as e:
+        return f"Error creating tables: {str(e)}"
 
 
 if __name__ == '__main__':

@@ -1,17 +1,31 @@
-/* --- Google-Inspired Dark Theme --- */
+/* --- Modern Light Theme (Inspired by target.css) --- */
 /* :root variables define the color palette for the entire site. */
 :root {
-    --bg-primary: #1f1f1f;
-    --bg-secondary: #2a2a2a;
-    --bg-tertiary: #3c4043;
-    --text-primary: #e8eaed;
-    --text-secondary: #969ba1;
-    --accent-primary: #8ab4f8;
-    --accent-primary-darker: #202124;
-    --border-color: #424242;
-    --danger-color: #f28b82;
-    --danger-background: rgba(242, 139, 130, 0.1);
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+    --secondary-color: #6c757d;
+    --secondary-hover: #5a6268;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --danger-hover: #c82333;
+    --warning-color: #ffc107;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-color: #e0e0e0;
+    --background-color: #f4f6f9;
+    --white: #ffffff;
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+
+    /* Mapping old variables to new theme for compatibility */
+    --bg-primary: var(--background-color);
+    --bg-secondary: var(--white);
+    --bg-tertiary: var(--light-color);
+    --text-primary: var(--dark-color);
+    --text-secondary: var(--secondary-color);
+    --accent-primary: var(--primary-color);
+    --accent-primary-darker: var(--white); /* Text on primary buttons */
+    --danger-background: rgba(220, 53, 69, 0.1);
 }
 
 /* --- Global & Body Styles --- */
@@ -22,11 +36,11 @@
 html, body {
     margin: 0;
     padding: 0;
-    font-family: var(--font-family);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 a {
@@ -37,9 +51,14 @@ a:hover {
     text-decoration: underline;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary);
-    font-weight: 500;
+h1, h2, h3, h5, h6 {
+    color: var(--white  );
+    font-weight: 600;
+}
+
+h4 {
+    color: var(--dark-color  );
+    font-weight: 600;
 }
 
 /* --- Auth Pages (Login, Signup, Index) --- */
@@ -50,24 +69,28 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     min-height: 100vh;
     padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .auth-container {
     width: 100%;
     max-width: 420px;
     background-color: var(--bg-secondary);
-    padding: 40px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: none;
+    box-shadow: var(--shadow-hover);
 }
 
 .auth-container h1 {
     font-size: 2.5rem;
-    margin: 0 0 1rem;
+    margin: 0 0 0.5rem;
+    color: var(--primary-color);
+    font-weight: 700;
 }
 
 .auth-container h2 {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-secondary);
     font-weight: 400;
     margin: 0 0 2.5rem;
@@ -80,10 +103,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-form input {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 12px 14px;
+    background-color: var(--white);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
     color: var(--text-primary);
     font-size: 1rem;
     transition: all 0.2s ease;
@@ -92,38 +115,45 @@ h1, h2, h3, h4, h5, h6 {
 .auth-form input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
+    box-shadow: none;
 }
 
 .buttons {
     display: flex;
     gap: 1rem;
     justify-content: center;
+    margin-top: 1rem;
 }
 
 .flashes {
     list-style: none;
-    padding: 1rem;
+    padding: 0;
     margin: 0 0 1rem 0;
     text-align: left;
-    border-radius: 4px;
-    background-color: var(--danger-background);
-    color: var(--danger-color);
-    border: 1px solid var(--danger-color);
+    border-radius: 8px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 0.75rem 1rem;
 }
 
 /* --- Button Styles --- */
 .btn {
     display: inline-block;
-    padding: 12px 24px;
+    padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 500;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: none;
     text-align: center;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: all 0.3s ease;
     text-decoration: none;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
 }
 
 .btn-primary {
@@ -131,49 +161,51 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--accent-primary-darker);
 }
 .btn-primary:hover {
-    background-color: #a6c9fb;
+    background-color: var(--primary-hover);
     text-decoration: none;
 }
 
 .btn-secondary {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-color: var(--border-color);
+    background-color: var(--secondary-color);
+    color: var(--white);
 }
 .btn-secondary:hover {
-    background-color: #4a4e52;
+    background-color: var(--secondary-hover);
     text-decoration: none;
 }
 
 .btn-danger {
-    background-color: var(--danger-background);
-    color: var(--danger-color);
-    border-color: var(--danger-color);
+    background-color: var(--danger-color);
+    color: var(--white);
 }
 .btn-danger:hover {
-    background-color: rgba(242, 139, 130, 0.2);
+    background-color: var(--danger-hover);
     text-decoration: none;
 }
 
 /* --- Dashboard --- */
 .dashboard-container {
     display: flex;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 .sidebar {
     width: 250px;
-    background-color: var(--bg-secondary);
-    padding: 20px;
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    color: var(--white);
+    padding: 2rem 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border-color);
+    border-right: none;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar h2 {
     text-align: center;
-    margin: 0 0 30px;
-    font-weight: 500;
+    margin: 0 0 2rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--white);
 }
 
 .sidebar nav {
@@ -186,19 +218,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar nav a {
-    color: var(--text-secondary);
+    color: var(--white);
     text-decoration: none;
     display: block;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin-bottom: 5px;
-    transition: all 0.2s ease;
+    padding: 1rem 2rem;
+    border-radius: 0;
+    margin-bottom: 0;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
 }
 
 .sidebar nav a:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    border-left-color: var(--primary-color);
     text-decoration: none;
+    transform: translateX(5px);
+}
+
+.logout-section {
+    padding: 1rem 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .logout-section .btn {
@@ -207,54 +247,71 @@ h1, h2, h3, h4, h5, h6 {
 
 .main-content {
     flex-grow: 1;
-    padding: 20px 40px;
+    padding: 2rem;
     overflow-y: auto;
 }
 
 .main-content h1 {
-    font-size: 2.2rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    padding-bottom: 1rem;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    padding-bottom: 0;
     margin: 0 0 2rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: none;
 }
 
 /* --- Tile & Content Styles --- */
 .tile {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 20px;
+    border-radius: 12px;
+    margin-bottom: 2rem;
     overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+.tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
 }
 
 .tile-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
+    padding: 1rem 1.5rem;
     cursor: pointer;
     border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: var(--white);
 }
 
 .tile-header h3 {
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--white);
 }
 
 .toggle-btn {
-    background-color: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
     border: none;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    font-size: 1.5em;
-    line-height: 28px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
 .tile.expanded .toggle-btn {
@@ -264,58 +321,76 @@ h1, h2, h3, h4, h5, h6 {
 .tile-content {
     max-height: 0;
     overflow: hidden;
-    padding: 0 20px;
+    padding: 0 1.5rem;
     transition: max-height 0.2s ease-out, padding 0.2s ease-out;
 }
 
 .tile.expanded .tile-content {
     max-height: 1500px;
-    padding: 20px;
+    padding: 1.5rem;
     transition: max-height 0.3s ease-in, padding 0.3s ease-in;
 }
 
 .add-btn {
-    background: none;
-    border: none;
-    font-size: 0.9em;
-    font-weight: 500;
-    color: var(--accent-primary);
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--light-color);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--secondary-color);
+    font-size: 1rem;
     cursor: pointer;
-    padding: 5px 0;
+    transition: all 0.3s ease;
+}
+.add-btn:hover {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
 }
 
 .profile-item {
-    border-bottom: 1px solid var(--border-color);
-    padding: 15px 0;
+    background: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
     display: flex;
-    gap: 15px;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+}
+.profile-item:hover {
+    border-color: var(--primary-color);
+    transform: translateX(5px);
 }
 
-.item-details h4 { font-size: 1.1em; margin: 0 0 5px; }
+.item-details h4 { font-size: 1.1em; margin: 0 0 5px; font-weight: 600; }
 .item-details p { margin: 0 0 4px; font-size: 0.95em; color: var(--text-secondary); }
 .item-details .item-meta { font-size: 0.85em; color: #80868b; }
 
-.item-actions { display: flex; align-items: center; gap: 12px; }
+.item-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem; }
 
-.edit-item-btn, .remove-item-btn, .edit-account-btn {
-    font-size: 1.2rem;
+.edit-item-btn, .remove-item-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
     cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--secondary-color);
+    font-size: 1rem;
 }
-
-.edit-item-btn:hover, .edit-account-btn:hover {
-    color: var(--accent-primary);
+.edit-item-btn:hover {
+    background: var(--primary-color);
+    color: var(--white);
 }
-
-.remove-item-btn:hover { color: var(--danger-color); }
+.remove-item-btn:hover {
+    background: var(--danger-color);
+    color: var(--white);
+}
 
 .tile-footer {
-    /* Adds vertical spacing and indents the link by 20px to match the content above it. */
-    padding: 15px 0;
-}
-
-.tile-footer .add-btn {
-    /* Overrides the generic button padding to make it look like a simple text link. */
-    padding: 0;
+    padding: 0 1.5rem 1.5rem;
 }
 
 /* --- Modal Styles --- */
@@ -325,21 +400,19 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     overflow-y: auto;
-
-    /* These lines hide the modal by default */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    backdrop-filter: blur(3px);
 }
 
 .modal-overlay.visible {
-    /* This makes the modal visible when triggered by JavaScript */
     opacity: 1;
     visibility: visible;
 }
@@ -347,17 +420,15 @@ h1, h2, h3, h4, h5, h6 {
 .modal-content {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     width: 90%;
-    max-width: 550px;
+    max-width: 600px;
     position: relative;
     margin: 20px 0;
-    padding: 25px 30px;
-
-    /* A subtle animation for the modal appearing */
-    transform: translateY(-20px);
-    transition: transform 0.3s ease;
+    padding: 2rem;
+    transform: translateY(-30px);
+    transition: transform 0.3s ease-out;
 }
 
 .modal-overlay.visible .modal-content {
@@ -366,23 +437,32 @@ h1, h2, h3, h4, h5, h6 {
 
 .modal-close-btn {
     position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8rem;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: var(--text-secondary);
     cursor: pointer;
     border: none;
     background: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .modal-close-btn:hover {
-    color: var(--text-primary);
+    color: var(--white);
+    background: var(--danger-color);
 }
 
 .modal-content h2 {
     margin-top: 0;
-    margin-bottom: 25px;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
 }
 
 .form-grid {
@@ -396,27 +476,29 @@ h1, h2, h3, h4, h5, h6 {
 
 .modal-form label, #account-form label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 0.5rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--dark-color);
     font-size: 0.9rem;
 }
 
 .modal-form input, .modal-form select, .modal-form textarea,
 #account-form input, #account-form select, #account-form textarea {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--bg-primary);
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--white);
     color: var(--text-primary);
+    font-family: inherit;
+    transition: all 0.3s ease;
 }
 
 .modal-form input:focus, .modal-form select:focus, .modal-form textarea:focus,
 #account-form input:focus, #account-form select:focus, #account-form textarea:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 #account-form input:disabled {
@@ -428,8 +510,10 @@ h1, h2, h3, h4, h5, h6 {
     grid-column: 1 / -1;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 1rem;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
 }
 
 .checkbox-group label {
@@ -437,28 +521,61 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
 }
 
+/* Form Privacy Control */
+.form-privacy-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--light-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.form-privacy-control .privacy-toggle {
+    margin: 0;
+}
+
+.form-privacy-control .privacy-description {
+    flex: 1;
+}
+
+.form-privacy-control .privacy-title {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.25rem;
+}
+
+.form-privacy-control .privacy-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
 /* --- Tab Styles --- */
 .tab-panel {
     display: flex;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 20px;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 2rem;
 }
 
 .tab-button {
     background: none;
     border: none;
     color: var(--text-secondary);
-    padding: 10px 20px;
+    padding: 1rem 2rem;
     cursor: pointer;
     font-size: 1rem;
-    margin-bottom: -1px; /* Aligns with the bottom border */
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
+    font-weight: 500;
+    margin-bottom: -2px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
 }
 
 .tab-button:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
+    color: var(--primary-color);
+    background-color: transparent;
 }
 
 .tab-button.active {
@@ -478,10 +595,9 @@ h1, h2, h3, h4, h5, h6 {
 .radio-group {
     display: flex;
     gap: 10px;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--bg-primary);
+    border: none;
+    border-radius: 8px;
+    background-color: transparent;
 }
 
 .radio-group input[type="radio"] {
@@ -491,69 +607,70 @@ h1, h2, h3, h4, h5, h6 {
 .radio-group label {
     flex: 1;
     text-align: center;
-    padding: 8px 12px;
-    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
-    background-color: var(--bg-tertiary);
+    background-color: var(--light-color);
+    border: 1px solid var(--border-color);
     color: var(--text-secondary);
 }
 
 .radio-group input[type="radio"]:checked + label {
     background-color: var(--accent-primary);
-    color: var(--accent-primary-darker);
+    color: var(--white);
     font-weight: 500;
+    border-color: var(--accent-primary);
 }
 
 /* --- Skill Status Styles --- */
 .skill-status {
     display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .skill-status.claimed {
-    background-color: white;
-    color: #000;
+    background-color: var(--warning-color);
+    color: #856404;
 }
 
 .skill-status.attested {
-    background-color: #ffd700;
-    color: #000;
+    background-color: var(--primary-color);
+    color: var(--white);
 }
 
-/* Optional: Add some margin to separate status from other content */
 .item-details .skill-status {
     margin-top: 5px;
 }
 
 /* --- Checkbox List Styles --- */
 .checkbox-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
     max-height: 200px;
     overflow-y: auto;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 10px;
-    background-color: var(--bg-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: var(--light-color);
 }
 
 .checkbox-list .checkbox-item {
     display: flex;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.checkbox-list .checkbox-item:last-child {
+    padding: 0;
     border-bottom: none;
+    gap: 0.5rem;
 }
 
 .checkbox-list .checkbox-item input[type="checkbox"] {
-    margin-right: 10px;
+    margin-right: 0;
     width: auto;
 }
 
@@ -568,20 +685,1121 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     color: var(--text-secondary);
     font-style: italic;
+    display: block;
 }
 
 /* --- Skill Sources Display --- */
 .skill-sources {
-    margin-top: 5px;
-    font-size: 0.85em;
-    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--secondary-color);
 }
 
 .skill-sources .source-item {
     display: inline-block;
-    background-color: var(--bg-tertiary);
-    padding: 2px 6px;
-    border-radius: 3px;
+    background: var(--white);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
     margin: 2px;
-    font-size: 0.8em;
+    border: 1px solid var(--border-color);
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+    }
+
+    .buttons {
+        flex-direction: column;
+    }
+}
+
+/* Job Management Styles */
+.hire-section {
+    max-width: 1200px;
+}
+
+.hire-actions {
+    margin-bottom: 2rem;
+}
+
+.jobs-list h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.job-item {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+.job-header {
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.job-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    flex-grow: 1;
+}
+
+.job-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-closed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-draft {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.job-details p {
+    margin: 0.25rem 0;
+    color: var(--text-secondary);
+}
+
+.job-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.job-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Job Posting Modal */
+.large-modal {
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+}
+
+.form-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.requirements-list {
+    margin-top: 1rem;
+}
+
+.requirement-item {
+    background: var(--light-color);
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+.requirement-item .form-row {
+    align-items: flex-end;
+}
+
+.remove-requirement-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin: 0;
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.empty-list-msg, .error-msg, .loading {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 2rem;
+}
+
+.error-msg {
+    color: var(--danger-color);
+}
+
+
+/* --- Job Seeker Styles --- */
+.job-seeker-section {
+    max-width: 1200px;
+}
+
+.job-filters {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.filters-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr auto auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-input, .filter-select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.job-seeker-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.job-tab-button {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--secondary-color);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.job-tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.job-tab-button:hover:not(.active) {
+    color: var(--dark-color);
+}
+
+.job-tab-pane {
+    display: none;
+}
+
+.job-tab-pane.active {
+    display: block;
+}
+
+.job-seeker-item {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.job-seeker-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.job-seeker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.job-seeker-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.job-seeker-company {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.job-seeker-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.job-detail-badge {
+    background: var(--light-color);
+    color: var(--secondary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.job-salary {
+    background: var(--primary-color);
+    color: var(--white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.job-seeker-description {
+    color: var(--dark-color);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.job-seeker-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.job-posted {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+.job-seeker-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.application-item {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.application-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.application-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.application-status {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-reviewed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-shortlisted {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.application-details p {
+    margin: 0.25rem 0;
+    color: var(--secondary-color);
+}
+
+.application-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Responsive design for job filters */
+@media (max-width: 768px) {
+    .filters-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .job-seeker-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .job-seeker-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* Job Details Modal */
+.job-details-content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.job-basic-info {
+    background: var(--light-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.job-basic-info p {
+    margin: 0.5rem 0;
+}
+
+.job-description {
+    margin-bottom: 1.5rem;
+}
+
+.job-description h3 {
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+}
+
+.job-requirements {
+    margin-bottom: 1.5rem;
+}
+
+.job-requirements h3 {
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+}
+
+.requirements-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.requirement-tag {
+    background: var(--primary-color);
+    color: var(--white);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.requirement-tag.preferred {
+    background: var(--secondary-color);
+}
+
+.job-actions {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+
+/* Eligibility Filter Styles */
+.eligibility-filter-row {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.eligibility-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    display: inline-block;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+.toggle-label {
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 14px;
+    user-select: none;
+}
+
+/* Eligibility Status Styles */
+.job-seeker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.header-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.eligibility-status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eligibility-status.not-eligible {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.eligibility-status.not-eligible i {
+    font-size: 10px;
+}
+
+/* Apply button disabled state */
+.apply-job-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.apply-job-btn:disabled:hover {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    transform: none;
+}
+
+
+/* Application Management Styles */
+.applications-section {
+    margin-top: 2rem;
+}
+
+.applications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.applications-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 1rem;
+}
+
+.bulk-actions.hidden {
+    display: none;
+}
+
+.applications-filter {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--white);
+}
+
+.application-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.application-card.selected {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.application-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--light-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.application-checkbox {
+    margin-right: 1rem;
+    transform: scale(1.2);
+}
+
+.application-info h4 {
+    margin: 0 0 0.25rem;
+    color: var(--dark-color);
+}
+
+.application-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.application-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.application-body {
+    padding: 1.5rem;
+}
+
+.candidate-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.candidate-info {
+    background: var(--light-color);
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.candidate-info h5 {
+    margin: 0 0 0.5rem;
+    color: var(--dark-color);
+}
+
+.candidate-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.cover-letter {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.status-selector {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--white);
+    min-width: 150px;
+}
+
+/* Status badges */
+.status-pending { background: #fff3cd; color: #856404; }
+.status-reviewed { background: #cce5ff; color: #004085; }
+.status-shortlisted { background: #d1ecf1; color: #0c5460; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+.status-interview_scheduled { background: #d4edda; color: #155724; }
+.status-offer_made { background: #d4edda; color: #155724; }
+.status-hired { background: #d4edda; color: #155724; }
+
+/* Privacy Toggle Styles */
+.privacy-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.privacy-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.privacy-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.privacy-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--secondary-color);
+    transition: 0.4s;
+    border-radius: 24px;
+}
+
+.privacy-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--white);
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+.privacy-toggle input:checked + .privacy-slider {
+    background-color: var(--primary-color);
+}
+
+.privacy-toggle input:checked + .privacy-slider:before {
+    transform: translateX(20px);
+}
+
+.privacy-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.privacy-toggle input:checked ~ .privacy-label {
+    color: var(--primary-color);
+}
+
+/* Notification styles */
+.notification-bell {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: var(--white);
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.notification-bell:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger-color);
+    color: var(--white);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 320px;
+    max-height: 400px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.notification-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.notification-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--dark-color);
+    background: var(--light-color);
+    border-radius: 8px 8px 0 0;
+}
+
+#notifications-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+    background: var(--light-color);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    background: rgba(0, 123, 255, 0.05);
+    border-left: 4px solid var(--primary-color);
+}
+
+.notification-item.unread:hover {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.notification-message {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.notification-time {
+    color: var(--secondary-color);
+    font-size: 0.75rem;
+}
+
+.notification-dropdown .empty-list-msg,
+.notification-dropdown .error-msg,
+.notification-dropdown .loading {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Job posting actions update */
+.job-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.applications-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Settings page styles */
+.settings-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.settings-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--dark-color);
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-info h5 {
+    margin: 0 0 0.25rem;
+    color: var(--dark-color);
+}
+
+.setting-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* Hire tabs styling */
+.hire-tabs {
+    display: flex;
+    margin: 2rem 0 1rem 0;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.hire-tab-button {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.hire-tab-button:hover {
+    color: var(--primary-color);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.hire-tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.hire-tab-pane {
+    display: none;
+}
+
+.hire-tab-pane.active {
+    display: block;
+}
+
+/* Applications page styles */
+.applications-page-container {
+    padding: 2rem;
+    min-height: 100vh;
+    background-color: var(--bg-primary);
+}
+
+.applications-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.applications-page-header h1 {
+    color: var(--dark-color);
+    margin: 0;
 }
