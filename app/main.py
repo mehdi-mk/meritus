@@ -8,6 +8,10 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
+from sqlalchemy.sql import func
+# from .models import User, JobApplication
+
+
 
 load_dotenv()
 
@@ -36,6 +40,7 @@ mail = Mail(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
@@ -46,13 +51,16 @@ class User(UserMixin, db.Model):
     country = db.Column(db.String(100))
     city = db.Column(db.String(100))
     bio = db.Column(db.Text)
-    user_type = db.Column(db.String(20), default='job_seeker')  # job_seeker, employer, both
+    # user_type = db.Column(db.String(20), default='job_seeker')  # job_seeker, employer, both
     company_name = db.Column(db.String(150))
     company_description = db.Column(db.Text)
     industry = db.Column(db.String(100))
     experiences = db.relationship('Experience', backref='user', lazy=True, cascade="all, delete-orphan")
     certificates = db.relationship('Certificate', backref='user', lazy=True, cascade="all, delete-orphan")
     degrees = db.relationship('Degree', backref='user', lazy=True, cascade="all, delete-orphan")
+    applications = db.relationship('JobApplication', back_populates='applicant', lazy=True,
+                                   cascade="all, delete-orphan")
+    notifications = db.relationship('Notification', backref='user', lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -64,22 +72,15 @@ class User(UserMixin, db.Model):
             'country': self.country,
             'city': self.city,
             'bio': self.bio,
-            'user_type': self.user_type,
+            # 'user_type': self.user_type,
             'company_name': self.company_name,
             'company_description': self.company_description,
             'industry': self.industry
         }
 
-# skill_sources = db.Table('skill_sources',
-#                          db.Column('skill_id', db.Integer, db.ForeignKey('skill.id'), primary_key=True),
-#                          db.Column('source_id', db.Integer, primary_key=True),
-#                          db.Column('source_type', db.String(20), primary_key=True)
-#                          # 'experience', 'certificate', or 'degree'
-#                          )
 
 class SkillSource(db.Model):
     __tablename__ = 'skill_sources'
-
     skill_id = db.Column(db.Integer, db.ForeignKey('skill.id'), primary_key=True)
     source_id = db.Column(db.Integer, primary_key=True)
     source_type = db.Column(db.String(20), primary_key=True)
@@ -240,6 +241,7 @@ class JobPosting(db.Model):
     required_experiences = db.relationship('JobRequiredExperience', backref='job', cascade="all, delete-orphan")
     required_certificates = db.relationship('JobRequiredCertificate', backref='job', cascade="all, delete-orphan")
     required_degrees = db.relationship('JobRequiredDegree', backref='job', cascade="all, delete-orphan")
+    applications = db.relationship('JobApplication', back_populates='job', lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -260,6 +262,28 @@ class JobPosting(db.Model):
             'required_experiences': [exp.to_dict() for exp in self.required_experiences],
             'required_certificates': [cert.to_dict() for cert in self.required_certificates],
             'required_degrees': [degree.to_dict() for degree in self.required_degrees]
+        }
+
+
+class JobApplication(db.Model):
+    __tablename__ = 'job_application'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    status = db.Column(db.String(50), default='Submitted', nullable=False)  # e.g., Submitted, Under Review, etc.
+    applied_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+    # Relationships to easily access applicant and job details
+    applicant = db.relationship('User', back_populates='applications')
+    job = db.relationship('JobPosting', back_populates='applications')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'job_id': self.job_id,
+            'status': self.status,
+            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S')
         }
 
 
@@ -327,6 +351,28 @@ class JobRequiredDegree(db.Model):
             'field_of_study': self.field_of_study,
             'is_required': self.is_required
         }
+
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    link = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'message': self.message,
+            'is_read': self.is_read,
+            'link': self.link,
+            'created_at': self.created_at.strftime('%b %d, %Y, %I:%M %p')
+        }
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -968,6 +1014,158 @@ def update_job_status(job_id):
     db.session.commit()
 
     return jsonify({"message": f"Job status updated to {status}"})
+
+
+@app.route('/api/jobs/<int:job_id>/apply', methods=['POST'])
+@login_required
+def apply_to_job(job_id):
+    """Handles a user's application to a specific job."""
+    job = JobPosting.query.get_or_404(job_id)
+
+    # Prevent the employer from applying to their own job
+    if job.posted_by == current_user.id:
+        return jsonify({'error': 'You cannot apply to your own job posting.'}), 403
+
+    # Check if the user has already applied
+    existing_application = JobApplication.query.filter_by(user_id=current_user.id, job_id=job_id).first()
+    if existing_application:
+        return jsonify({'error': 'You have already applied to this job.'}), 409
+
+    # Create the new application record
+    new_application = JobApplication(user_id=current_user.id, job_id=job_id, status='Submitted')
+    db.session.add(new_application)
+
+    # Create a notification for the employer
+    employer_notification = Notification(
+        user_id=job.posted_by,
+        title='New Application Received',
+        message=f'You have a new application for your job posting: "{job.title}".',
+        link=url_for('dashboard', _external=True)  # Or a more specific link
+    )
+    db.session.add(employer_notification)
+
+    # Create a confirmation notification for the applicant
+    applicant_notification = Notification(
+        user_id=current_user.id,
+        title='Application Submitted!',
+        message=f'Your application for "{job.title}" has been successfully submitted.',
+        link=url_for('dashboard', _external=True)  # Or a more specific link
+    )
+    db.session.add(applicant_notification)
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Application submitted successfully!',
+        'application_id': new_application.id
+    }), 201
+
+
+@app.route('/api/applications', methods=['GET'])
+@login_required
+def get_received_applications():
+    """
+    API endpoint for a user to view all applications for their job postings.
+    """
+    applications = db.session.query(
+        JobApplication.id,
+        JobApplication.status,
+        JobApplication.applied_at,
+        JobPosting.title,
+        User.first_name,
+        User.last_name,
+        User.email
+    ).join(JobPosting, JobApplication.job_id == JobPosting.id)\
+     .join(User, JobApplication.user_id == User.id)\
+     .filter(JobPosting.posted_by == current_user.id)\
+     .order_by(JobApplication.applied_at.desc())\
+     .all()
+
+    # We then format the results into the JSON structure the frontend expects.
+    all_applications = [
+        {
+            'application_id': app.id,
+            'job_title': app.title,
+            'applicant_name': f"{app.first_name or ''} {app.last_name or ''}".strip(),
+            'applicant_email': app.email,
+            'status': app.status,
+            'applied_at': app.applied_at.isoformat()
+        }
+        for app in applications
+    ]
+
+    return jsonify(all_applications)
+
+
+@app.route('/api/applications/<int:application_id>/status', methods=['PUT'])
+@login_required
+def update_application_status(application_id):
+    """
+    Updates the status of a specific job application.
+    Accessible only by the user who posted the job.
+    """
+    application = JobApplication.query.get_or_404(application_id)
+    job = JobPosting.query.get_or_404(application.job_id)
+
+    # Authorization: Ensure the current user is the one who posted the job
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    new_status = data.get('status')
+
+    # Validate that the new status is one of the allowed values
+    valid_statuses = ["Submitted", "Under Review", "Rejected", "Offer Sent", "Accepted"]
+    if not new_status or new_status not in valid_statuses:
+        return jsonify({"error": "Invalid status provided"}), 400
+
+    # Update the application status
+    application.status = new_status
+
+    # Create a notification for the applicant about the status change
+    notification = Notification(
+        user_id=application.user_id,
+        title="Application Status Updated",
+        message=f'The status for your application to "{job.title}" has changed to: {new_status}.',
+        link=url_for('dashboard', _external=True)  # This can be made more specific later
+    )
+    db.session.add(notification)
+    db.session.commit()
+
+    return jsonify({"message": f"Application status updated to {new_status}"})
+
+
+# NOTIFICATIONS
+
+@app.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    """Fetches all notifications for the current user."""
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    return jsonify([n.to_dict() for n in notifications])
+
+
+@app.route('/api/notifications/mark-all-as-read', methods=['POST'])
+@login_required
+def mark_all_notifications_as_read():
+    """Marks all unread notifications for the current user as read."""
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'message': 'All notifications marked as read'})
+
+
+@app.route('/api/notifications/<int:notification_id>/mark-as-read', methods=['POST'])
+@login_required
+def mark_notification_as_read(notification_id):
+    """Marks a single notification as read."""
+    notification = Notification.query.get_or_404(notification_id)
+    if notification.user_id != current_user.id:
+        # Forbidden
+        return jsonify({'error': 'Permission denied'}), 403
+
+    notification.is_read = True
+    db.session.commit()
+    return jsonify({'message': f'Notification {notification_id} marked as read'})
 
 
 @app.route('/migrate-db')

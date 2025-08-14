@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- Element & State Management ---
     let selectedApplications = new Set();
-    let currentJobApplications = null;
 
     const contentArea = document.getElementById('content-area');
     const modals = {
@@ -37,6 +36,41 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
+    contentArea.addEventListener('change', async (event) => {
+        if (event.target.classList.contains('application-status-dropdown')) {
+            const dropdown = event.target;
+            const applicationId = dropdown.dataset.applicationId;
+            const newStatus = dropdown.value;
+
+            try {
+                const response = await fetch(`/api/applications/${applicationId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update status');
+                }
+
+                // You can add a small, non-disruptive success message here if you like
+                console.log(`Application ${applicationId} status updated to ${newStatus}`);
+
+            } catch (error) {
+                console.error('Error updating application status:', error);
+                // If the update fails, alert the user and refresh the list to show the correct state
+                alert('Failed to update status. Please try again.');
+                loadAllApplications();
+            }
+        }
+    });
+
+
+    // =================================================================
+    // NOTIFICATION SYSTEM - MODIFICATIONS
+    // =================================================================
+
+
     // Add to the beginning of the DOMContentLoaded function
     function addNotificationBell() {
         const sidebar = document.querySelector('.sidebar h2');
@@ -62,15 +96,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+
     function setupNotifications() {
         const bell = document.getElementById('notification-bell');
         const dropdown = document.getElementById('notification-dropdown');
 
         bell.addEventListener('click', (e) => {
             e.stopPropagation();
+            const isOpening = !dropdown.classList.contains('show');
             dropdown.classList.toggle('show');
-            if (dropdown.classList.contains('show')) {
+
+            if (isOpening) {
                 loadNotifications();
+                // If the badge is visible, it means there were unread notifications.
+                // Mark them all as read and hide the badge.
+                const badge = document.getElementById('notification-badge');
+                if (badge && badge.style.display !== 'none') {
+                    markAllNotificationsAsRead();
+                }
             }
         });
 
@@ -78,9 +121,26 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdown.classList.remove('show');
         });
 
-        // Load notifications count on page load
         loadNotificationCount();
     }
+
+    async function markAllNotificationsAsRead() {
+        try {
+            // This endpoint marks all notifications as read on the backend
+            const response = await fetch('/api/notifications/mark-all-as-read', { method: 'POST' });
+            if (!response.ok) throw new Error('Failed to mark notifications as read');
+
+            // Hide the badge on the frontend immediately
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                badge.style.display = 'none';
+                badge.textContent = '0';
+            }
+        } catch (error) {
+            console.error('Error marking notifications as read:', error);
+        }
+    }
+
 
     async function loadNotifications() {
         const notificationsList = document.getElementById('notifications-list');
@@ -103,15 +163,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function createNotificationHTML(notification) {
+        // We add a data-link attribute to make the item clickable
+        // and a cursor style to indicate that.
         return `
             <div class="notification-item ${notification.is_read ? '' : 'unread'}"
-                 data-notification-id="${notification.id}">
+                 data-notification-id="${notification.id}"
+                 data-link="${notification.link || ''}"
+                 style="cursor: pointer;">
                 <div class="notification-title">${notification.title}</div>
                 <div class="notification-message">${notification.message}</div>
                 <div class="notification-time">${notification.created_at}</div>
             </div>
         `;
     }
+
 
     async function loadNotificationCount() {
         try {
@@ -137,6 +202,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Call this function in the DOMContentLoaded
     addNotificationBell();
+
+
+    document.getElementById('notifications-list').addEventListener('click', (event) => {
+        const notificationItem = event.target.closest('.notification-item');
+        if (notificationItem) {
+            const link = notificationItem.dataset.link;
+            // Redirect if the notification has a valid link
+            if (link && link !== 'null' && link.trim() !== '') {
+                window.location.href = link;
+            }
+        }
+    });
 
 
     // Update the createProfileItemHTML function to include privacy controls
@@ -1089,178 +1166,78 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load all applications for employer
     async function loadAllApplications() {
-        const applicationsList = document.getElementById('employer-applications-list');
-        if (!applicationsList) return;
+        // This ID matches the one in your existing loadJobContent function
+        const applicationsContent = document.getElementById('employer-applications-list');
+        if (!applicationsContent) {
+            console.error('Error: Target element "employer-applications-list" not found.');
+            return;
+        }
+
+        // Start with a loading message
+        applicationsContent.innerHTML = '<p class="loading">Loading applications...</p>';
 
         try {
-            // Get all jobs and their applications
-            const jobsResponse = await fetch('/api/jobs');
-            if (!jobsResponse.ok) throw new Error('Failed to load jobs');
-
-            const jobs = await jobsResponse.json();
-
-            if (jobs.length === 0) {
-                applicationsList.innerHTML = '<p class="empty-list-msg">No job postings yet.</p>';
-                return;
+            const response = await fetch('/api/applications');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch applications: ${response.statusText}`);
             }
+            const applications = await response.json();
 
-            let allApplicationsHtml = '';
-            for (const job of jobs) {
-                const applicationsResponse = await fetch(`/api/jobs/${job.id}/applications`);
-                if (applicationsResponse.ok) {
-                    const applications = await applicationsResponse.json();
-                    if (applications.length > 0) {
-                        allApplicationsHtml += `
-                            <div class="job-applications-section">
-                                <h4>${job.title} (${applications.length} applications)</h4>
-                                ${createApplicationsListHTML(applications, job.id)}
-                            </div>
-                        `;
-                    }
-                }
-            }
-
-            if (allApplicationsHtml === '') {
-                applicationsList.innerHTML = '<p class="empty-list-msg">No applications received yet.</p>';
+            if (applications.length === 0) {
+                applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received yet.</div>';
             } else {
-                applicationsList.innerHTML = allApplicationsHtml;
-                setupApplicationEventListeners();
+                applicationsContent.innerHTML = `
+                    <div class="table-container">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Job Title</th>
+                                    <th>Applicant</th>
+                                    <th>Status</th>
+                                    <th>Applied On</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${applications.map(createApplicationRowHTML).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             }
         } catch (error) {
-            console.error('Error loading all applications:', error);
-            applicationsList.innerHTML = '<p class="error-msg">Failed to load applications. Please try again.</p>';
+            console.error('Error loading applications:', error);
+            applicationsContent.innerHTML = '<div class="error-msg">Could not load applications. Please try again later.</div>';
         }
     }
 
+    function createApplicationRowHTML(application) {
+        const appliedDate = new Date(application.applied_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
 
-    // Open applications window for specific job
-    function openApplicationsWindow(jobId) {
-        // Open in new tab/window
-        const url = `/applications/${jobId}`;
-        window.open(url, '_blank');
-    }
-
-
-    // Create applications list HTML
-    function createApplicationsListHTML(applications, jobId) {
-        if (applications.length === 0) {
-            return '<div class="empty-list-msg">No applications for this job yet.</div>';
-        }
-
-        const bulkActions = `
-            <div class="applications-header">
-                <div class="applications-controls">
-                    <div class="bulk-actions hidden" id="bulk-actions-${jobId}">
-                        <select class="status-selector" id="bulk-status-${jobId}">
-                            <option value="">Change Status</option>
-                            <option value="reviewed">Mark as Reviewed</option>
-                            <option value="shortlisted">Shortlist</option>
-                            <option value="rejected">Reject</option>
-                            <option value="interview_scheduled">Schedule Interview</option>
-                            <option value="offer_made">Make Offer</option>
-                            <option value="hired">Mark as Hired</option>
-                        </select>
-                        <button class="btn btn-primary apply-bulk-btn" data-job-id="${jobId}">Apply</button>
-                        <button class="btn btn-secondary cancel-bulk-btn" data-job-id="${jobId}">Cancel</button>
-                    </div>
-                    <select class="applications-filter" id="filter-${jobId}">
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="shortlisted">Shortlisted</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="interview_scheduled">Interview Scheduled</option>
-                        <option value="offer_made">Offer Made</option>
-                        <option value="hired">Hired</option>
-                    </select>
-                </div>
-            </div>
-        `;
-
-        const applicationsHtml = applications.map(application => createApplicationCardHTML(application, jobId)).join('');
-
-        return bulkActions + '<div class="applications-list">' + applicationsHtml + '</div>';
-    }
-
-
-    // Create application card HTML
-    function createApplicationCardHTML(application, jobId) {
-        const applicant = application.applicant_profile;
-        const statusClass = `status-${application.status}`;
-
-        const skillsCount = applicant.skills ? applicant.skills.length : 0;
-        const experiencesCount = applicant.experiences ? applicant.experiences.length : 0;
-        const certificatesCount = applicant.certificates ? applicant.certificates.length : 0;
-        const degreesCount = applicant.degrees ? applicant.degrees.length : 0;
+        const statuses = ["Submitted", "Under Review", "Rejected", "Offer Sent", "Accepted"];
+        const statusOptions = statuses.map(status =>
+            `<option value="${status}" ${application.status === status ? 'selected' : ''}>${status}</option>`
+        ).join('');
 
         return `
-            <div class="application-card" data-application-id="${application.id}" data-job-id="${jobId}">
-                <div class="application-header">
-                    <div style="display: flex; align-items: center;">
-                        <input type="checkbox" class="application-checkbox" data-application-id="${application.id}">
-                        <div class="application-info">
-                            <h4>${applicant.first_name} ${applicant.last_name}</h4>
-                            <div class="application-meta">
-                                Applied: ${application.applied_at} • ${applicant.city}, ${applicant.country}
-                            </div>
-                        </div>
+            <tr>
+                <td>${application.job_title}</td>
+                <td>
+                    <div class="applicant-info">
+                        <span class="applicant-name">${application.applicant_name}</span>
+                        <span class="applicant-email">${application.applicant_email}</span>
                     </div>
-                    <div class="application-actions">
-                        <select class="status-selector" data-application-id="${application.id}">
-                            <option value="pending" ${application.status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="reviewed" ${application.status === 'reviewed' ? 'selected' : ''}>Reviewed</option>
-                            <option value="shortlisted" ${application.status === 'shortlisted' ? 'selected' : ''}>Shortlisted</option>
-                            <option value="rejected" ${application.status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                            <option value="interview_scheduled" ${application.status === 'interview_scheduled' ? 'selected' : ''}>Interview Scheduled</option>
-                            <option value="offer_made" ${application.status === 'offer_made' ? 'selected' : ''}>Offer Made</option>
-                            <option value="hired" ${application.status === 'hired' ? 'selected' : ''}>Hired</option>
-                        </select>
-                        <span class="application-status ${statusClass}">
-                            ${application.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                    </div>
-                </div>
-                <div class="application-body">
-                    <div class="candidate-summary">
-                        <div class="candidate-info">
-                            <h5>Profile Summary</h5>
-                            <p>${applicant.bio || 'No bio provided'}</p>
-                            <div class="candidate-stats">
-                                <div class="stat-item">
-                                    <div class="stat-number">${skillsCount}</div>
-                                    <div class="stat-label">Skills</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">${experiencesCount}</div>
-                                    <div class="stat-label">Experience</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">${certificatesCount}</div>
-                                    <div class="stat-label">Certificates</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">${degreesCount}</div>
-                                    <div class="stat-label">Degrees</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="candidate-info">
-                            <h5>Contact Information</h5>
-                            <p><strong>Email:</strong> ${applicant.email}</p>
-                            <p><strong>Location:</strong> ${applicant.city}, ${applicant.country}</p>
-                            <button class="btn btn-secondary view-profile-btn" data-applicant-id="${applicant.id}">
-                                View Full Profile
-                            </button>
-                        </div>
-                    </div>
-                    ${application.cover_letter ? `
-                        <div class="cover-letter">
-                            <h5>Cover Letter</h5>
-                            <p>${application.cover_letter}</p>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
+                </td>
+                <td>
+                    <select class="application-status-dropdown" data-application-id="${application.application_id}">
+                        ${statusOptions}
+                    </select>
+                </td>
+                <td>${appliedDate}</td>
+            </tr>
         `;
     }
 
