@@ -889,7 +889,8 @@ def browse_jobs():
     try:
         # Query all job postings that are not 'Draft' or 'Archived'
         jobs = JobPosting.query.filter(
-            JobPosting.status.notin_(['Draft', 'Archived'])
+            JobPosting.status.notin_(['Draft', 'Archived']),
+            JobPosting.posted_by != current_user.id  # This is the new line
         ).order_by(JobPosting.created_at.desc()).all()
 
         return jsonify([job.to_dict() for job in jobs]), 200
@@ -1133,6 +1134,40 @@ def update_application_status(application_id):
     db.session.commit()
 
     return jsonify({"message": f"Application status updated to {new_status}"})
+
+
+@app.route('/api/my-applications', methods=['GET'])
+@login_required
+def get_my_applications():
+    """
+    API endpoint for a user to retrieve all the applications they have submitted.
+    """
+    # This query joins the application with the job posting to get job details.
+    # It filters to only include applications submitted by the current user.
+    applications = db.session.query(
+        JobApplication.id,
+        JobApplication.status,
+        JobApplication.applied_at,
+        JobPosting.title.label('job_title'),
+        JobPosting.company_name
+    ).join(JobPosting, JobApplication.job_id == JobPosting.id)\
+     .filter(JobApplication.user_id == current_user.id)\
+     .order_by(JobApplication.applied_at.desc())\
+     .all()
+
+    # We format the results into the JSON structure the frontend expects.
+    user_applications = [
+        {
+            'id': app.id,
+            'job_title': app.job_title,
+            'company_name': app.company_name,
+            'status': app.status.replace('_', ' ').title(), # Format status for display
+            'applied_at': app.applied_at.strftime('%B %d, %Y')
+        }
+        for app in applications
+    ]
+
+    return jsonify(user_applications)
 
 
 # NOTIFICATIONS

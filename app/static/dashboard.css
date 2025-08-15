@@ -1300,157 +1300,91 @@ h4 {
 }
 
 
-/* Application Management Styles */
-.applications-section {
-    margin-top: 2rem;
-}
-
-.applications-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.applications-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.bulk-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-right: 1rem;
-}
-
-.bulk-actions.hidden {
-    display: none;
-}
-
-.applications-filter {
-    padding: 0.5rem;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--white);
-}
-
+/* --- Application Card Styles --- */
 .application-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: var(--white);
     border-radius: 12px;
-    margin-bottom: 1rem;
-    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-left-width: 5px; /* Thick left border for status color */
     box-shadow: var(--shadow);
     transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .application-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-hover);
 }
 
-.application-card.selected {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
-}
-
-.application-header {
+.application-card .application-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    background: var(--light-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.application-checkbox {
-    margin-right: 1rem;
-    transform: scale(1.2);
+    padding: 1.5rem;
+    gap: 1rem;
 }
 
 .application-info h4 {
     margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
     color: var(--dark-color);
 }
 
 .application-meta {
-    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
+}
+
+.application-meta .meta-separator {
+    color: var(--border-color);
 }
 
 .application-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.application-body {
-    padding: 1.5rem;
-}
-
-.candidate-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.candidate-info {
-    background: var(--light-color);
-    padding: 1rem;
-    border-radius: 8px;
-}
-
-.candidate-info h5 {
-    margin: 0 0 0.5rem;
-    color: var(--dark-color);
-}
-
-.candidate-stats {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 0.5rem;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.cover-letter {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: var(--white);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    flex-shrink: 0;
 }
 
 .status-selector {
-    padding: 0.5rem;
+    padding: 0.6rem 1rem;
     border: 2px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--white);
-    min-width: 150px;
+    border-radius: 8px;
+    background-color: var(--white);
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.65em auto;
+    padding-right: 2.5rem;
 }
 
-/* Status badges */
-.status-pending { background: #fff3cd; color: #856404; }
-.status-reviewed { background: #cce5ff; color: #004085; }
-.status-shortlisted { background: #d1ecf1; color: #0c5460; }
-.status-rejected { background: #f8d7da; color: #721c24; }
-.status-interview_scheduled { background: #d4edda; color: #155724; }
-.status-offer_made { background: #d4edda; color: #155724; }
-.status-hired { background: #d4edda; color: #155724; }
+.status-selector:hover {
+    border-color: var(--primary-color);
+}
+
+.status-selector:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* Color-coding for the left border of the application card */
+.status-border-submitted { border-left-color: #ffc107; /* Yellow */ }
+.status-border-under-review { border-left-color: #17a2b8; /* Teal */ }
+.status-border-offer-sent { border-left-color: #28a745; /* Green */ }
+.status-border-accepted { border-left-color: #007bff; /* Blue */ }
+.status-border-rejected { border-left-color: #dc3545; /* Red */ }
+
 
 /* Privacy Toggle Styles */
 .privacy-control {

@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     contentArea.addEventListener('change', async (event) => {
-        if (event.target.classList.contains('application-status-dropdown')) {
+        if (event.target.classList.contains('status-selector')) {
             const dropdown = event.target;
             const applicationId = dropdown.dataset.applicationId;
             const newStatus = dropdown.value;
@@ -53,6 +53,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Failed to update status');
                 }
 
+                // Update the card's border color to reflect the new status
+                const card = dropdown.closest('.application-card');
+                if (card) {
+                    const statusClass = newStatus.toLowerCase().replace(/ /g, '-');
+                    // Remove any old status-border-* class before adding the new one
+                    card.className = card.className.replace(/status-border-\S+/g, ' ').trim();
+                    card.classList.add(`status-border-${statusClass}`);
+                }
+
                 // You can add a small, non-disruptive success message here if you like
                 console.log(`Application ${applicationId} status updated to ${newStatus}`);
 
@@ -60,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error updating application status:', error);
                 // If the update fails, alert the user and refresh the list to show the correct state
                 alert('Failed to update status. Please try again.');
-                loadAllApplications();
+                loadAllApplications(); // Refresh the list on error
             }
         }
     });
@@ -1186,23 +1195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (applications.length === 0) {
                 applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received yet.</div>';
             } else {
-                applicationsContent.innerHTML = `
-                    <div class="table-container">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Job Title</th>
-                                    <th>Applicant</th>
-                                    <th>Status</th>
-                                    <th>Applied On</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${applications.map(createApplicationRowHTML).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                applicationsContent.innerHTML = applications.map(createApplicationCardHTML).join('');
             }
         } catch (error) {
             console.error('Error loading applications:', error);
@@ -1210,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function createApplicationRowHTML(application) {
+    function createApplicationCardHTML(application) {
         const appliedDate = new Date(application.applied_at).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -1222,22 +1215,27 @@ document.addEventListener('DOMContentLoaded', function() {
             `<option value="${status}" ${application.status === status ? 'selected' : ''}>${status}</option>`
         ).join('');
 
+        // This converts "Under Review" to "under-review" for use as a CSS class
+        const statusClass = application.status.toLowerCase().replace(/ /g, '-');
+
         return `
-            <tr>
-                <td>${application.job_title}</td>
-                <td>
-                    <div class="applicant-info">
-                        <span class="applicant-name">${application.applicant_name}</span>
-                        <span class="applicant-email">${application.applicant_email}</span>
+            <div class="application-card status-border-${statusClass}" data-application-id="${application.application_id}">
+                <div class="application-header">
+                    <div class="application-info">
+                        <h4>${application.applicant_name}</h4>
+                        <div class="application-meta">
+                            <span>Applied for <strong>${application.job_title}</strong></span>
+                            <span class="meta-separator">•</span>
+                            <span>${appliedDate}</span>
+                        </div>
                     </div>
-                </td>
-                <td>
-                    <select class="application-status-dropdown" data-application-id="${application.application_id}">
-                        ${statusOptions}
-                    </select>
-                </td>
-                <td>${appliedDate}</td>
-            </tr>
+                    <div class="application-actions">
+                        <select class="status-selector" data-application-id="${application.application_id}">
+                            ${statusOptions}
+                        </select>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
@@ -1352,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!applicationsList) return;
 
         try {
-            const response = await fetch('/api/applications');
+            const response = await fetch('/api/my-applications');
             if (!response.ok) throw new Error('Failed to load applications');
 
             const applications = await response.json();
