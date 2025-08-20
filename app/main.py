@@ -97,6 +97,7 @@ class Skill(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Claimed')
     attestation_count = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_public = db.Column(db.Boolean, nullable=False, default=True)
 
     skill_sources = db.relationship('SkillSource', backref='skill', lazy=True, cascade="all, delete-orphan")
 
@@ -150,6 +151,7 @@ class Skill(db.Model):
             "status_display": status_display,
             "attestation_count": self.attestation_count,
             "acquired_at_sources": self.get_acquired_at_sources(),
+            "is_public": self.is_public,
         }
 
 
@@ -166,6 +168,7 @@ class Experience(db.Model):
     employment_type = db.Column(db.String(50))
     employment_arrangement = db.Column(db.String(50))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_public = db.Column(db.Boolean, nullable=False, default=True)
 
     def to_dict(self):
         print("Executing to_dict on class Experience.")
@@ -179,7 +182,8 @@ class Experience(db.Model):
             'end_date': self.end_date.strftime('%B %Y') if self.end_date else None,
             'is_present': self.is_present,
             'employment_type': self.employment_type,
-            'employment_arrangement': self.employment_arrangement
+            'employment_arrangement': self.employment_arrangement,
+            'is_public': self.is_public,
         }
 
 
@@ -193,6 +197,7 @@ class Certificate(db.Model):
     credential_id = db.Column(db.String(100))
     credential_url = db.Column(db.String(255))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_public = db.Column(db.Boolean, nullable=False, default=True)
 
     def to_dict(self):
         print("Executing to_dict on class Certificate.")
@@ -203,7 +208,8 @@ class Certificate(db.Model):
             'issue_date': self.issue_date.strftime('%B %Y'),
             'expiry_date': self.expiry_date.strftime('%B %Y') if self.expiry_date else None,
             'credential_id': self.credential_id,
-            'credential_url': self.credential_url
+            'credential_url': self.credential_url,
+            'is_public': self.is_public,
         }
 
 
@@ -219,6 +225,7 @@ class Degree(db.Model):
     end_date = db.Column(db.Date, nullable=False)
     gpa = db.Column(db.String(10))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_public = db.Column(db.Boolean, nullable=False, default=True)
 
     def to_dict(self):
         print("Executing to_dict on class Degree.")
@@ -231,7 +238,8 @@ class Degree(db.Model):
             'city': self.city,
             'start_date': self.start_date.strftime('%B %Y'),
             'end_date': self.end_date.strftime('%B %Y'),
-            'gpa': self.gpa
+            'gpa': self.gpa,
+            'is_public': self.is_public,
         }
 
 
@@ -499,7 +507,12 @@ def parse_date(date_str):
             # Fallback to YYYY-MM format (for existing functionality)
             return datetime.strptime(date_str, '%Y-%m').date()
         except ValueError:
-            return None
+            try:
+                # Add new fallback for "Month YYYY" format from to_dict methods
+                return datetime.strptime(date_str, '%B %Y').date()
+            except ValueError:
+                return None
+
 
 # --- API Endpoints for Skills ---
 # Endpoint to get user's profile items for skill form
@@ -558,7 +571,8 @@ def add_skill():
             type=data['type'],
             title=data['title'],
             status='Claimed',
-            user_id=current_user.id
+            user_id=current_user.id,
+            is_public=data.get('is_public', True)
         )
         db.session.add(new_skill)
         db.session.flush()  # Get the skill ID
@@ -612,6 +626,7 @@ def update_skill(skill_id):
     skill.type = data.get('type', skill.type)
     skill.title = data.get('title', skill.title)
     skill.status = data.get('status', skill.status)
+    skill.is_public = data.get('is_public', skill.is_public)
 
     try:
         # Remove existing source relationships
@@ -667,7 +682,8 @@ def add_experience():
         is_present=bool(data.get('is_present', False)),
         country=data.get('country'), city=data.get('city'),
         employment_type=data.get('employment_type'),
-        employment_arrangement=data.get('employment_arrangement')
+        employment_arrangement=data.get('employment_arrangement'),
+        is_public=data.get('is_public', True)
     )
     db.session.add(new_experience)
     db.session.commit()
@@ -677,10 +693,17 @@ def add_experience():
 @login_required
 def get_experience(id):
     print("Executing get_experience(id) on app.")
-    cert = Experience.query.filter_by(id=id, user_id=current_user.id).first()
-    if cert is None:
+    exp = Experience.query.filter_by(id=id, user_id=current_user.id).first()
+    if exp is None:
         return jsonify({'message': 'Experience not found'}), 404
-    return jsonify(cert.to_dict())
+
+    exp_dict = exp.to_dict()
+    exp_dict['start_date'] = exp.start_date.strftime('%Y-%m')
+    if exp.end_date:
+        exp_dict['end_date'] = exp.end_date.strftime('%Y-%m')
+
+    return jsonify(exp_dict)
+
 
 @app.route('/api/experiences/<int:id>', methods=['PUT'])
 @login_required
@@ -699,6 +722,7 @@ def edit_experience(id):
     exp.city = data.get('city')
     exp.employment_type = data.get('employment_type')
     exp.employment_arrangement = data.get('employment_arrangement')
+    exp.is_public = data.get('is_public', exp.is_public)
     db.session.commit()
     return jsonify(exp.to_dict())
 
@@ -732,7 +756,8 @@ def add_certificate():
         issue_date=parse_date(data.get('issue_date')),
         expiry_date=parse_date(data.get('expiry_date')),
         credential_id=data.get('credential_id'),
-        credential_url=data.get('credential_url')
+        credential_url=data.get('credential_url'),
+        is_public=data.get('is_public', True)
     )
     db.session.add(new_cert)
     db.session.commit()
@@ -745,7 +770,14 @@ def get_certificate(id):
     cert = Certificate.query.filter_by(id=id, user_id=current_user.id).first()
     if cert is None:
         return jsonify({'message': 'Certificate not found'}), 404
-    return jsonify(cert.to_dict())
+
+    cert_dict = cert.to_dict()
+    cert_dict['issue_date'] = cert.issue_date.strftime('%Y-%m')
+    if cert.expiry_date:
+        cert_dict['expiry_date'] = cert.expiry_date.strftime('%Y-%m')
+
+    return jsonify(cert_dict)
+
 
 @app.route('/api/certificates/<int:id>', methods=['PUT'])
 @login_required
@@ -761,6 +793,7 @@ def edit_certificate(id):
     cert.expiry_date = parse_date(data.get('expiry_date'))
     cert.credential_id = data.get('credential_id')
     cert.credential_url = data.get('credential_url')
+    cert.is_public = data.get('is_public', cert.is_public)
     db.session.commit()
     return jsonify(cert.to_dict())
 
@@ -796,7 +829,8 @@ def add_degree():
         start_date=parse_date(data.get('start_date')),
         end_date=parse_date(data.get('end_date')),
         country=data.get('country'), city=data.get('city'),
-        gpa=data.get('gpa')
+        gpa=data.get('gpa'),
+        is_public=data.get('is_public', True)
     )
     db.session.add(new_degree)
     db.session.commit()
@@ -806,10 +840,16 @@ def add_degree():
 @login_required
 def get_degree(id):
     print("Executing get_degree(id) on app.")
-    cert = Degree.query.filter_by(id=id, user_id=current_user.id).first()
-    if cert is None:
+    degree = Degree.query.filter_by(id=id, user_id=current_user.id).first()
+    if degree is None:
         return jsonify({'message': 'Degree not found'}), 404
-    return jsonify(cert.to_dict())
+
+    degree_dict = degree.to_dict()
+    degree_dict['start_date'] = degree.start_date.strftime('%Y-%m')
+    degree_dict['end_date'] = degree.end_date.strftime('%Y-%m')
+
+    return jsonify(degree_dict)
+
 
 @app.route('/api/degrees/<int:id>', methods=['PUT'])
 @login_required
@@ -827,6 +867,7 @@ def edit_degree(id):
     degree.country = data.get('country')
     degree.city = data.get('city')
     degree.gpa = data.get('gpa')
+    degree.is_public = data.get('is_public', degree.is_public)
     db.session.commit()
     return jsonify(degree.to_dict())
 

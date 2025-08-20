@@ -368,7 +368,19 @@ h4 {
 .item-details p { margin: 0 0 4px; font-size: 0.95em; color: var(--text-secondary); }
 .item-details .item-meta { font-size: 0.85em; color: #80868b; }
 
-.item-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem; }
+
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-left: 1rem;
+}
+
+.item-action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
 
 .edit-item-btn, .remove-item-btn {
     background: none;
@@ -1391,9 +1403,6 @@ h4 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border-color);
 }
 
 .privacy-toggle {

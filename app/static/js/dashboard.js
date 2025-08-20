@@ -37,50 +37,83 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setting up an event listener that automatically handles status updates for job applications
     contentArea.addEventListener('change', async (event) => {
-        // Check if the event was triggered by an element with the 'status-selector' class (the dropdown).
+        // Check if the event was triggered by the application status dropdown.
         if (event.target.classList.contains('status-selector')) {
             const dropdown = event.target;
-            // Get the application's unique ID from the dropdown's data attribute.
             const applicationId = dropdown.dataset.applicationId;
-            // Get the new status selected by the user.
             const newStatus = dropdown.value;
 
             try {
-                // Asynchronously send a PUT request to the API to update the application status.
                 const response = await fetch(`/api/applications/${applicationId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: newStatus }),
                 });
 
-                // If the server responds with an error, throw an exception to be handled by the catch block.
                 if (!response.ok) {
                     throw new Error('Failed to update status');
                 }
 
-                // Update the card's border color to reflect the new status
                 const card = dropdown.closest('.application-card');
                 if (card) {
-                    // Convert the new status text (e.g., "Under Review") into a CSS-friendly class name (e.g., "under-review").
                     const statusClass = newStatus.toLowerCase().replace(/ /g, '-');
-                    // Remove any old status-border-* class before adding the new one
                     card.className = card.className.replace(/status-border-\S+/g, ' ').trim();
-                    // Then, add the new class to visually update the card's border color.
                     card.classList.add(`status-border-${statusClass}`);
                 }
 
-                // Log a success message to the console for debugging purposes.
                 console.log(`Application ${applicationId} status updated to ${newStatus}`);
 
             } catch (error) {
                 console.error('Error updating application status:', error);
-                // If the update fails, alert the user and refresh the list to show the correct state
                 alert('Failed to update status. Please try again.');
-                // Reload the entire list of applications to ensure the UI is consistent with the database state
                 loadAllApplications();
             }
         }
+
+        // Check if the event was triggered by a privacy toggle checkbox.
+        if (event.target.classList.contains('privacy-checkbox')) {
+            const checkbox = event.target;
+            const id = checkbox.dataset.id;
+            const type = checkbox.dataset.type;
+            const isPublic = checkbox.checked;
+
+            const label = checkbox.closest('.privacy-control').querySelector('.privacy-label');
+            if (label) {
+                label.textContent = isPublic ? 'Public' : 'Private';
+            }
+
+            await updatePrivacySetting(id, type, isPublic);
+        }
     });
+
+    // --- Privacy Toggle Handler ---
+    async function updatePrivacySetting(id, type, isPublic) {
+        try {
+            const res = await fetch(`/api/${type}s/${id}`);
+            if (!res.ok) throw new Error(`Failed to fetch ${type} to update privacy.`);
+            const itemData = await res.json();
+
+            itemData.is_public = isPublic;
+
+            // The update endpoint for skills requires the sources to be in a specific format.
+            if (type === 'skill' && itemData.acquired_at_sources) {
+                itemData.acquired_at_sources = itemData.acquired_at_sources.map(s => ({ id: s.id, type: s.type.toLowerCase() }));
+            }
+
+            const response = await fetch(`/api/${type}s/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemData),
+            });
+
+            if (!response.ok) throw new Error('Failed to update privacy setting');
+
+        } catch (error) {
+            console.error('Error updating privacy setting:', error);
+            alert('Could not update privacy setting. Refreshing the page to ensure consistency.');
+            loadProfileContent();
+        }
+    }
 
 
     function loadHomeContent() {
@@ -856,8 +889,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${sourcesHTML}
                 </div>
                 <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
+                    <div class="item-action-buttons">
+                        <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="privacy-control">
+                        <label class="privacy-toggle">
+                            <input type="checkbox" class="privacy-checkbox" data-id="${skill.id}" data-type="skill" ${skill.is_public ? 'checked' : ''}>
+                            <span class="privacy-slider"></span>
+                        </label>
+                        <span class="privacy-label">${skill.is_public ? 'Public' : 'Private'}</span>
+                    </div>
                 </div>
             </div>`;
     }
@@ -906,8 +948,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
                 </div>
                 <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
+                    <div class="item-action-buttons">
+                        <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="privacy-control">
+                        <label class="privacy-toggle">
+                            <input type="checkbox" class="privacy-checkbox" data-id="${exp.id}" data-type="experience" ${exp.is_public ? 'checked' : ''}>
+                            <span class="privacy-slider"></span>
+                        </label>
+                        <span class="privacy-label">${exp.is_public ? 'Public' : 'Private'}</span>
+                    </div>
                 </div>
             </div>`;
     }
@@ -924,8 +975,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
                 </div>
                 <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
+                    <div class="item-action-buttons">
+                        <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="privacy-control">
+                        <label class="privacy-toggle">
+                            <input type="checkbox" class="privacy-checkbox" data-id="${cert.id}" data-type="certificate" ${cert.is_public ? 'checked' : ''}>
+                            <span class="privacy-slider"></span>
+                        </label>
+                        <span class="privacy-label">${cert.is_public ? 'Public' : 'Private'}</span>
+                    </div>
                 </div>
             </div>`;
     }
@@ -942,11 +1002,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
                 </div>
                 <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
+                    <div class="item-action-buttons">
+                        <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="privacy-control">
+                        <label class="privacy-toggle">
+                            <input type="checkbox" class="privacy-checkbox" data-id="${degree.id}" data-type="degree" ${degree.is_public ? 'checked' : ''}>
+                            <span class="privacy-slider"></span>
+                        </label>
+                        <span class="privacy-label">${degree.is_public ? 'Public' : 'Private'}</span>
+                    </div>
                 </div>
             </div>`;
     }
+
 
 
     // --- Modal & Form Logic ---
@@ -982,6 +1052,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            const privacyToggle = form.querySelector('[name="is_public"]');
+            const privacyLabel = form.querySelector('.privacy-label');
+            if (privacyToggle && privacyLabel) {
+                privacyLabel.textContent = privacyToggle.checked ? 'Public' : 'Private';
+            }
+
             if (type === 'experience') {
                 const presentCheckbox = form.querySelector('#present-checkbox');
                 if (presentCheckbox) presentCheckbox.dispatchEvent(new Event('change'));
@@ -1013,6 +1089,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         };
 
+        const privacyToggle = form.querySelector('[name="is_public"]');
+        if (privacyToggle) {
+            privacyToggle.addEventListener('change', () => {
+                const privacyLabel = form.querySelector('.privacy-label');
+                if (privacyLabel) {
+                    privacyLabel.textContent = privacyToggle.checked ? 'Public' : 'Private';
+                }
+            });
+        }
+
         modal.addEventListener('click', e => {
             if (e.target === modal || e.target.matches('.modal-close-btn, .modal-cancel-btn')) {
                 closeModal();
@@ -1024,6 +1110,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
+            data.is_public = formData.has('is_public');
 
             // Check if this is a skill form by checking both form ID and modal ID
             const isSkillForm = this.id === 'skill-form' || modal.id === 'skill-modal';
@@ -2391,6 +2478,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modal = modals[modalType];
                 const form = modal.querySelector('.modal-form');
                 form.reset();
+
+                const privacyToggle = form.querySelector('[name="is_public"]');
+                const privacyLabel = form.querySelector('.privacy-label');
+                if (privacyToggle) privacyToggle.checked = true;
+                if (privacyLabel) privacyLabel.textContent = 'Public';
+
                 form.querySelector('input[name="id"]').value = '';
                 modal.querySelector('h2').textContent = `Add New ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`;
 
