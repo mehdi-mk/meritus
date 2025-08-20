@@ -35,20 +35,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-
+    // Setting up an event listener that automatically handles status updates for job applications
     contentArea.addEventListener('change', async (event) => {
+        // Check if the event was triggered by an element with the 'status-selector' class (the dropdown).
         if (event.target.classList.contains('status-selector')) {
             const dropdown = event.target;
+            // Get the application's unique ID from the dropdown's data attribute.
             const applicationId = dropdown.dataset.applicationId;
+            // Get the new status selected by the user.
             const newStatus = dropdown.value;
 
             try {
+                // Asynchronously send a PUT request to the API to update the application status.
                 const response = await fetch(`/api/applications/${applicationId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: newStatus }),
                 });
 
+                // If the server responds with an error, throw an exception to be handled by the catch block.
                 if (!response.ok) {
                     throw new Error('Failed to update status');
                 }
@@ -56,33 +61,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update the card's border color to reflect the new status
                 const card = dropdown.closest('.application-card');
                 if (card) {
+                    // Convert the new status text (e.g., "Under Review") into a CSS-friendly class name (e.g., "under-review").
                     const statusClass = newStatus.toLowerCase().replace(/ /g, '-');
                     // Remove any old status-border-* class before adding the new one
                     card.className = card.className.replace(/status-border-\S+/g, ' ').trim();
+                    // Then, add the new class to visually update the card's border color.
                     card.classList.add(`status-border-${statusClass}`);
                 }
 
-                // You can add a small, non-disruptive success message here if you like
+                // Log a success message to the console for debugging purposes.
                 console.log(`Application ${applicationId} status updated to ${newStatus}`);
 
             } catch (error) {
                 console.error('Error updating application status:', error);
                 // If the update fails, alert the user and refresh the list to show the correct state
                 alert('Failed to update status. Please try again.');
-                loadAllApplications(); // Refresh the list on error
+                // Reload the entire list of applications to ensure the UI is consistent with the database state
+                loadAllApplications();
             }
         }
     });
 
 
-    // =================================================================
-    // NOTIFICATION SYSTEM - MODIFICATIONS
-    // =================================================================
+    function loadHomeContent() {
+        contentArea.innerHTML = '<h1>Home</h1>';
+    }
 
 
-    // Add to the beginning of the DOMContentLoaded function
+    // =================================================================
+    // NOTIFICATION SYSTEM
+    // =================================================================
+
+    /* Problem: Notifications are not clickable. */
+
+    // Create and insert the notification bell icon and its dropdown panel
     function addNotificationBell() {
         const sidebar = document.querySelector('.sidebar h2');
+        // Check if the bell already exists to avoid duplicates
         if (sidebar && !document.querySelector('.notification-bell')) {
             sidebar.innerHTML += `
                 <div class="notification-container" style="position: relative; display: inline-block; margin-left: 1rem;">
@@ -101,20 +116,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
 
+            // Call setupNotifications() immediately to make the newly added elements functional.
             setupNotifications();
         }
     }
 
-
+    // Bring the notification system to life by setting up all the necessary user interactions.
     function setupNotifications() {
         const bell = document.getElementById('notification-bell');
         const dropdown = document.getElementById('notification-dropdown');
 
+        // Attach a click event to the bell icon that toggles the dropdown's visibility.
         bell.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpening = !dropdown.classList.contains('show');
             dropdown.classList.toggle('show');
 
+            // When the dropdown opens, it loads the notifications and marks them as read.
             if (isOpening) {
                 loadNotifications();
                 // If the badge is visible, it means there were unread notifications.
@@ -126,20 +144,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Set up a global click listener that closes the dropdown if the user clicks anywhere else on the page.
         document.addEventListener('click', () => {
             dropdown.classList.remove('show');
         });
 
+        // Make an initial call to check for any unread notifications when the page first loads.
         loadNotificationCount();
     }
 
+
+    // Send a request to a specific API endpoint to mark all of the user's unread notifications as "read" in the database.
     async function markAllNotificationsAsRead() {
         try {
-            // This endpoint marks all notifications as read on the backend
+            // This endpoint marks all notifications as read on the backend.
             const response = await fetch('/api/notifications/mark-all-as-read', { method: 'POST' });
             if (!response.ok) throw new Error('Failed to mark notifications as read');
 
-            // Hide the badge on the frontend immediately
+            // Hide the badge on the frontend immediately.
             const badge = document.getElementById('notification-badge');
             if (badge) {
                 badge.style.display = 'none';
@@ -151,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
+    // Fetch the user's full notification list from the server's API.
     async function loadNotifications() {
         const notificationsList = document.getElementById('notifications-list');
 
@@ -171,6 +194,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+
+    // Helper function that acts as a template generator.
+    // Take a single notification object (containing its title, message, etc.) and return a formatted HTML string.
+    // Used by the loadNotifications() function.
     function createNotificationHTML(notification) {
         // We add a data-link attribute to make the item clickable
         // and a cursor style to indicate that.
@@ -187,6 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
+    // A more lightweight version of loadNotifications() function.
+    // This function only fetches the number of unread notifications.
+    // It then updates the small badge on the bell icon, showing the count if it's greater than zero and hiding it otherwise.
     async function loadNotificationCount() {
         try {
             const response = await fetch('/api/notifications');
@@ -209,10 +239,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Call this function in the DOMContentLoaded
+
+    // Starting point for the entire notification feature
     addNotificationBell();
 
+    // Load notifications on page load
+    loadNotifications();
+    // Load notification count every 5 seconds
+    setInterval(loadNotificationCount, 5000);
 
+
+    // Add event listener to mark notifications as read when clicked
+    // and redirect to the notification link if available.
     document.getElementById('notifications-list').addEventListener('click', (event) => {
         const notificationItem = event.target.closest('.notification-item');
         if (notificationItem) {
@@ -225,442 +263,868 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    // Update the createProfileItemHTML function to include privacy controls
-    function createProfileItemHTML(item, type) {
-        let detailsHTML = '';
-        let metaHTML = '';
-
-        switch(type) {
-            case 'skill':
-                detailsHTML = `
-                    <h4>${item.title}</h4>
-                    <p>Type: ${item.type}</p>
-                    <p>Status: ${item.status}</p>
-                `;
-                break;
-            case 'experience':
-                detailsHTML = `
-                    <h4>${item.position_title}</h4>
-                    <p>${item.employer} • ${item.city}, ${item.country}</p>
-                    <p>${item.start_date} - ${item.is_present ? 'Present' : item.end_date}</p>
-                `;
-                metaHTML = `${item.employment_type || ''} ${item.employment_arrangement ? '• ' + item.employment_arrangement : ''}`;
-                break;
-            case 'certificate':
-                detailsHTML = `
-                    <h4>${item.title}</h4>
-                    <p>Issued by: ${item.issuer}</p>
-                    <p>Issue Date: ${item.issue_date}</p>
-                `;
-                if (item.expiry_date) metaHTML = `Expires: ${item.expiry_date}`;
-                break;
-            case 'degree':
-                detailsHTML = `
-                    <h4>${item.degree} in ${item.field_of_study}</h4>
-                    <p>${item.school} • ${item.city}, ${item.country}</p>
-                    <p>${item.start_date} - ${item.end_date}</p>
-                `;
-                if (item.gpa) metaHTML = `GPA: ${item.gpa}`;
-                break;
-        }
-
-        return `
-            <div class="profile-item" data-id="${item.id}" data-type="${type}">
-                <div class="item-details">
-                    ${detailsHTML}
-                    ${metaHTML ? `<div class="item-meta">${metaHTML}</div>` : ''}
-                    <div class="privacy-control">
-                        <label class="privacy-toggle">
-                            <input type="checkbox" class="privacy-checkbox"
-                                   data-id="${item.id}" data-type="${type}"
-                                   ${item.is_public ? 'checked' : ''}>
-                            <span class="privacy-slider"></span>
-                        </label>
-                        <span class="privacy-label">${item.is_public ? 'Public' : 'Private'}</span>
-                    </div>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item-btn" data-id="${item.id}" data-type="${type}">✏️</button>
-                    <button class="remove-item-btn" data-id="${item.id}" data-type="${type}">🗑️</button>
-                </div>
-            </div>
-        `;
-    }
+    // =================================================================
+    // Profile Section
+    // =================================================================
 
 
-
-    // Update modal opening functions to include privacy controls
-    function openSkillModal(skill = null) {
-        const modal = modals.skill;
-        const form = document.getElementById('skill-form');
-        const modalTitle = modal.querySelector('h2');
-
-        if (skill) {
-            modalTitle.textContent = 'Edit Skill';
-            document.getElementById('skill-type').value = skill.type;
-            document.getElementById('skill-title').value = skill.title;
-            document.getElementById('skill-status').value = skill.status;
-            form.dataset.skillId = skill.id;
-
-            addPrivacyControlToForm('skill-form', skill.is_public);
-        } else {
-            modalTitle.textContent = 'Add New Skill';
-            form.reset();
-            delete form.dataset.skillId;
-
-            addPrivacyControlToForm('skill-form', true); // Default to public
-        }
-
-        modal.classList.add('visible');
-    }
-
-    function openExperienceModal(experience = null) {
-        const modal = modals.experience;
-        const form = document.getElementById('experience-form');
-        const modalTitle = modal.querySelector('h2');
-
-        if (experience) {
-            modalTitle.textContent = 'Edit Experience';
-            document.getElementById('exp-position').value = experience.position_title;
-            document.getElementById('exp-employer').value = experience.employer;
-            document.getElementById('exp-country').value = experience.country;
-            document.getElementById('exp-city').value = experience.city;
-            document.getElementById('exp-start-date').value = experience.start_date;
-            document.getElementById('exp-end-date').value = experience.end_date || '';
-            document.getElementById('exp-is-present').checked = experience.is_present;
-            document.getElementById('exp-employment-type').value = experience.employment_type;
-            document.getElementById('exp-employment-arrangement').value = experience.employment_arrangement;
-            form.dataset.experienceId = experience.id;
-
-            addPrivacyControlToForm('experience-form', experience.is_public);
-        } else {
-            modalTitle.textContent = 'Add New Experience';
-            form.reset();
-            delete form.dataset.experienceId;
-
-            addPrivacyControlToForm('experience-form', true); // Default to public
-        }
-
-        modal.classList.add('visible');
-    }
-
-    function openCertificateModal(certificate = null) {
-        const modal = modals.certificate;
-        const form = document.getElementById('certificate-form');
-        const modalTitle = modal.querySelector('h2');
-
-        if (certificate) {
-            modalTitle.textContent = 'Edit Certificate';
-            document.getElementById('cert-title').value = certificate.title;
-            document.getElementById('cert-issuer').value = certificate.issuer;
-            document.getElementById('cert-issue-date').value = certificate.issue_date;
-            document.getElementById('cert-expiry-date').value = certificate.expiry_date || '';
-            document.getElementById('cert-credential-id').value = certificate.credential_id || '';
-            document.getElementById('cert-credential-url').value = certificate.credential_url || '';
-            form.dataset.certificateId = certificate.id;
-
-            addPrivacyControlToForm('certificate-form', certificate.is_public);
-        } else {
-            modalTitle.textContent = 'Add New Certificate';
-            form.reset();
-            delete form.dataset.certificateId;
-
-            addPrivacyControlToForm('certificate-form', true); // Default to public
-        }
-
-        modal.classList.add('visible');
-    }
-
-    function openDegreeModal(degree = null) {
-        const modal = modals.degree;
-        const form = document.getElementById('degree-form');
-        const modalTitle = modal.querySelector('h2');
-
-        if (degree) {
-            modalTitle.textContent = 'Edit Degree';
-            document.getElementById('degree-level').value = degree.degree;
-            document.getElementById('degree-field').value = degree.field_of_study;
-            document.getElementById('degree-school').value = degree.school;
-            document.getElementById('degree-country').value = degree.country;
-            document.getElementById('degree-city').value = degree.city;
-            document.getElementById('degree-start-date').value = degree.start_date;
-            document.getElementById('degree-end-date').value = degree.end_date;
-            document.getElementById('degree-gpa').value = degree.gpa || '';
-            form.dataset.degreeId = degree.id;
-
-            addPrivacyControlToForm('degree-form', degree.is_public);
-        } else {
-            modalTitle.textContent = 'Add New Degree';
-            form.reset();
-            delete form.dataset.degreeId;
-
-            addPrivacyControlToForm('degree-form', true); // Default to public
-        }
-
-        modal.classList.add('visible');
-    }
+    /* Problem: The Public/Private toggle switch doesn't appear. */
+//    async function loadProfile() {
+//        try {
+//            const response = await fetch('/api/profile');
+//            if (!response.ok) throw new Error('Failed to load profile');
+//            const profile = await response.json();
+//            const profileContainer = document.getElementById('profile-items');
+//            profileContainer.innerHTML = ''; // Clear existing items
+//            profile.skills.forEach(skill => {
+//                profileContainer.appendChild(createProfileItemHTML(skill, 'skill'));
+//            });
+//            profile.experiences.forEach(experience => {
+//                profileContainer.appendChild(createProfileItemHTML(experience, 'experience'));
+//            });
+//            profile.certificates.forEach(certificate => {
+//                profileContainer.appendChild(createProfileItemHTML(certificate, 'certificate'));
+//            });
+//        } catch (error) {
+//            console.error('Error loading profile:', error);
+//        }
+//    }
+//    loadProfile();
 
 
     // Add privacy control to all modal forms
-    function addPrivacyControlToForm(formId, isPublic = true) {
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        // Check if privacy control already exists
-        if (form.querySelector('.form-privacy-control')) return;
-
-        const privacyHTML = `
-            <div class="form-group full-width">
-                <div class="form-privacy-control">
-                    <div class="privacy-description">
-                        <div class="privacy-title">Visibility</div>
-                        <p class="privacy-text">Choose whether this item should be visible on your public profile</p>
-                    </div>
-                    <label class="privacy-toggle">
-                        <input type="checkbox" id="is-public-toggle" name="is_public" ${isPublic ? 'checked' : ''}>
-                        <span class="privacy-slider"></span>
-                    </label>
-                    <span class="privacy-label" id="privacy-status">${isPublic ? 'Public' : 'Private'}</span>
-                </div>
-            </div>
-        `;
-
-        // Insert before form actions
-        const formActions = form.querySelector('.form-actions');
-        if (formActions) {
-            formActions.insertAdjacentHTML('beforebegin', privacyHTML);
-        } else {
-            form.insertAdjacentHTML('beforeend', privacyHTML);
-        }
-
-        // Add event listener for toggle
-        const toggle = form.querySelector('#is-public-toggle');
-        const statusLabel = form.querySelector('#privacy-status');
-
-        if (toggle && statusLabel) {
-            toggle.addEventListener('change', function() {
-                statusLabel.textContent = this.checked ? 'Public' : 'Private';
-            });
-        }
-    }
-
-
-    async function handleExperienceFormSubmit(e) {
-        e.preventDefault();
-
-        const form = e.target;
-        const formData = new FormData(form);
-        const experienceId = form.dataset.experienceId;
-
-        const data = {
-            position_title: formData.get('position_title'),
-            employer: formData.get('employer'),
-            country: formData.get('country'),
-            city: formData.get('city'),
-            start_date: formData.get('start_date'),
-            end_date: formData.get('end_date'),
-            is_present: formData.get('is_present') === 'on',
-            employment_type: formData.get('employment_type'),
-            employment_arrangement: formData.get('employment_arrangement'),
-            is_public: formData.get('is_public') === 'on'  // Add this line
-        };
-
-        try {
-            const url = experienceId ? `/api/experiences/${experienceId}` : '/api/experiences';
-            const method = experienceId ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error('Failed to save experience');
-
-            modals.experience.classList.remove('visible');
-            showNotification(`Experience ${experienceId ? 'updated' : 'added'} successfully`, 'success');
-            loadProfileContent();
-
-        } catch (error) {
-            console.error('Error saving experience:', error);
-            showNotification('Failed to save experience', 'error');
-        }
-    }
+    // Main job is to inject a complete, self-contained "Public/Private" visibility control into a specified form.
+//    function addPrivacyControlToForm(formId, isPublic = true) {
+//        const form = document.getElementById(formId);
+//        if (!form) return;
+//
+//        // Check if privacy control already exists
+//        if (form.querySelector('.form-privacy-control')) return;
+//
+//        const privacyHTML = `
+//            <div class="form-group full-width">
+//                <div class="form-privacy-control">
+//                    <div class="privacy-description">
+//                        <div class="privacy-title">Visibility</div>
+//                        <p class="privacy-text">Choose whether this item should be visible on your public profile</p>
+//                    </div>
+//                    <label class="privacy-toggle">
+//                        <input type="checkbox" id="is-public-toggle" name="is_public" ${isPublic ? 'checked' : ''}>
+//                        <span class="privacy-slider"></span>
+//                    </label>
+//                    <span class="privacy-label" id="privacy-status">${isPublic ? 'Public' : 'Private'}</span>
+//                </div>
+//            </div>
+//        `;
+//
+//        // Insert before form actions
+//        const formActions = form.querySelector('.form-actions');
+//        if (formActions) {
+//            formActions.insertAdjacentHTML('beforebegin', privacyHTML);
+//        } else {
+//            form.insertAdjacentHTML('beforeend', privacyHTML);
+//        }
+//
+//        // Add event listener for toggle
+//        const toggle = form.querySelector('#is-public-toggle');
+//        const statusLabel = form.querySelector('#privacy-status');
+//
+//        if (toggle && statusLabel) {
+//            toggle.addEventListener('change', function() {
+//                statusLabel.textContent = this.checked ? 'Public' : 'Private';
+//            });
+//        }
+//    }
 
 
-    async function handleCertificateFormSubmit(e) {
-        e.preventDefault();
-
-        const form = e.target;
-        const formData = new FormData(form);
-        const certificateId = form.dataset.certificateId;
-
-        const data = {
-            title: formData.get('title'),
-            issuer: formData.get('issuer'),
-            issue_date: formData.get('issue_date'),
-            expiry_date: formData.get('expiry_date'),
-            credential_id: formData.get('credential_id'),
-            credential_url: formData.get('credential_url'),
-            is_public: formData.get('is_public') === 'on'  // Add this line
-        };
-
-        try {
-            const url = certificateId ? `/api/certificates/${certificateId}` : '/api/certificates';
-            const method = certificateId ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error('Failed to save certificate');
-
-            modals.certificate.classList.remove('visible');
-            showNotification(`Certificate ${certificateId ? 'updated' : 'added'} successfully`, 'success');
-            loadProfileContent();
-
-        } catch (error) {
-            console.error('Error saving certificate:', error);
-            showNotification('Failed to save certificate', 'error');
-        }
-    }
-
-
-    async function handleDegreeFormSubmit(e) {
-        e.preventDefault();
-
-        const form = e.target;
-        const formData = new FormData(form);
-        const degreeId = form.dataset.degreeId;
-
-        const data = {
-            degree: formData.get('degree'),
-            field_of_study: formData.get('field_of_study'),
-            school: formData.get('school'),
-            country: formData.get('country'),
-            city: formData.get('city'),
-            start_date: formData.get('start_date'),
-            end_date: formData.get('end_date'),
-            gpa: formData.get('gpa'),
-            is_public: formData.get('is_public') === 'on'  // Add this line
-        };
-
-        try {
-            const url = degreeId ? `/api/degrees/${degreeId}` : '/api/degrees';
-            const method = degreeId ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error('Failed to save degree');
-
-            modals.degree.classList.remove('visible');
-            showNotification(`Degree ${degreeId ? 'updated' : 'added'} successfully`, 'success');
-            loadProfileContent();
-
-        } catch (error) {
-            console.error('Error saving degree:', error);
-            showNotification('Failed to save degree', 'error');
-        }
-    }
+    // Update the createProfileItemHTML function to include privacy controls
+//    function createProfileItemHTML(item, type) {
+//        let detailsHTML = '';
+//        let metaHTML = '';
+//
+//        switch(type) {
+//            case 'skill':
+//                detailsHTML = `
+//                    <h4>${item.title}</h4>
+//                    <p>Type: ${item.type}</p>
+//                    <p>Status: ${item.status}</p>
+//                `;
+//                break;
+//            case 'experience':
+//                detailsHTML = `
+//                    <h4>${item.position_title}</h4>
+//                    <p>${item.employer} • ${item.city}, ${item.country}</p>
+//                    <p>${item.start_date} - ${item.is_present ? 'Present' : item.end_date}</p>
+//                `;
+//                metaHTML = `${item.employment_type || ''} ${item.employment_arrangement ? '• ' + item.employment_arrangement : ''}`;
+//                break;
+//            case 'certificate':
+//                detailsHTML = `
+//                    <h4>${item.title}</h4>
+//                    <p>Issued by: ${item.issuer}</p>
+//                    <p>Issue Date: ${item.issue_date}</p>
+//                `;
+//                if (item.expiry_date) metaHTML = `Expires: ${item.expiry_date}`;
+//                break;
+//            case 'degree':
+//                detailsHTML = `
+//                    <h4>${item.degree} in ${item.field_of_study}</h4>
+//                    <p>${item.school} • ${item.city}, ${item.country}</p>
+//                    <p>${item.start_date} - ${item.end_date}</p>
+//                `;
+//                if (item.gpa) metaHTML = `GPA: ${item.gpa}`;
+//                break;
+//        }
+//
+//        return `
+//            <div class="profile-item" data-id="${item.id}" data-type="${type}">
+//                <div class="item-details">
+//                    ${detailsHTML}
+//                    ${metaHTML ? `<div class="item-meta">${metaHTML}</div>` : ''}
+//                    <div class="privacy-control">
+//                        <label class="privacy-toggle">
+//                            <input type="checkbox" class="privacy-checkbox"
+//                                   data-id="${item.id}" data-type="${type}"
+//                                   ${item.is_public ? 'checked' : ''}>
+//                            <span class="privacy-slider"></span>
+//                        </label>
+//                        <span class="privacy-label">${item.is_public ? 'Public' : 'Private'}</span>
+//                    </div>
+//                </div>
+//                <div class="item-actions">
+//                    <button class="edit-item-btn" data-id="${item.id}" data-type="${type}">✏️</button>
+//                    <button class="remove-item-btn" data-id="${item.id}" data-type="${type}">🗑️</button>
+//                </div>
+//            </div>
+//        `;
+//    }
 
 
-    async function handleSkillFormSubmit(e) {
-        e.preventDefault();
+    // Manage the opening and preparation of modal dialogs for either creating a new profile item or editing an existing one.
+//    function openSkillModal(skill = null) {
+//        const modal = modals.skill;
+//        const form = document.getElementById('skill-form');
+//        const modalTitle = modal.querySelector('h2');
+//
+//        // If a "skill" object is provided, it means the user is editing an existing skill.
+//        if (skill) {
+//            modalTitle.textContent = 'Edit Skill';
+//
+//            // Correctly find and check the radio button that matches the skill's type.
+//            const typeRadioButton = form.querySelector(`input[name="type"][value="${skill.type}"]`);
+//            if (typeRadioButton) {
+//                typeRadioButton.checked = true;
+//            }
+//
+//            document.getElementById('skill-title').value = skill.title;
+//            // The 'skill-status' element is commented out in the HTML, so the line referencing it is removed to prevent an error.
+//            form.dataset.skillId = skill.id;
+//
+//            addPrivacyControlToForm('skill-form', skill.is_public);
+//        }
+//        // Prepare the modal for adding a new skill.
+//        else {
+//            modalTitle.textContent = 'Add New Skill';
+//            form.reset();
+//            delete form.dataset.skillId;
+//
+//            addPrivacyControlToForm('skill-form', true); // Default to public
+//        }
+//
+//        modal.classList.add('visible');
+//    }
+//
+//    // Similar to the above function for skill modal.
+//    function openExperienceModal(experience = null) {
+//        const modal = modals.experience;
+//        const form = document.getElementById('experience-form');
+//        const modalTitle = modal.querySelector('h2');
+//
+//        if (experience) {
+//            modalTitle.textContent = 'Edit Experience';
+//            // Corrected all element IDs to match the HTML.
+//            document.getElementById('position-title').value = experience.position_title;
+//            document.getElementById('employer').value = experience.employer;
+//            document.getElementById('country').value = experience.country;
+//            document.getElementById('city').value = experience.city;
+//            document.getElementById('start-date').value = experience.start_date;
+//            document.getElementById('end-date').value = experience.end_date || '';
+//            document.getElementById('present-checkbox').checked = experience.is_present;
+//            document.getElementById('employment-type').value = experience.employment_type;
+//            document.getElementById('employment-arrangement').value = experience.employment_arrangement;
+//            form.dataset.experienceId = experience.id;
+//
+//            addPrivacyControlToForm('experience-form', experience.is_public);
+//        } else {
+//            modalTitle.textContent = 'Add New Experience';
+//
+//            form.reset();
+//            delete form.dataset.experienceId;
+//
+//            addPrivacyControlToForm('experience-form', true); // Default to public
+//        }
+//
+//        modal.classList.add('visible');
+//    }
+//
+//    // Similar to above functions for skill and experience modals.
+//    function openCertificateModal(certificate = null) {
+//        const modal = modals.certificate;
+//        const form = document.getElementById('certificate-form');
+//        const modalTitle = modal.querySelector('h2');
+//
+//        if (certificate) {
+//            modalTitle.textContent = 'Edit Certificate';
+//            document.getElementById('cert-title').value = certificate.title;
+//            document.getElementById('cert-issuer').value = certificate.issuer;
+//            document.getElementById('cert-issue-date').value = certificate.issue_date;
+//            document.getElementById('cert-expiry-date').value = certificate.expiry_date || '';
+//            // Corrected element IDs for credential fields.
+//            document.getElementById('cert-id').value = certificate.credential_id || '';
+//            document.getElementById('cert-url').value = certificate.credential_url || '';
+//            form.dataset.certificateId = certificate.id;
+//
+//            addPrivacyControlToForm('certificate-form', certificate.is_public);
+//        } else {
+//            modalTitle.textContent = 'Add New Certificate';
+//
+//            form.reset();
+//            delete form.dataset.certificateId;
+//
+//            addPrivacyControlToForm('certificate-form', true); // Default to public
+//        }
+//
+//        modal.classList.add('visible');
+//    }
+//
+//    // Similar to above functions for skill, experience, and degree modals.
+//    function openDegreeModal(degree = null) {
+//        const modal = modals.degree;
+//        const form = document.getElementById('degree-form');
+//        const modalTitle = modal.querySelector('h2');
+//
+//        if (degree) {
+//            modalTitle.textContent = 'Edit Degree';
+//            // Corrected the element ID for the degree level/title.
+//            document.getElementById('degree-degree').value = degree.degree;
+//            document.getElementById('degree-field').value = degree.field_of_study;
+//            document.getElementById('degree-school').value = degree.school;
+//            document.getElementById('degree-country').value = degree.country;
+//            document.getElementById('degree-city').value = degree.city;
+//            document.getElementById('degree-start-date').value = degree.start_date;
+//            document.getElementById('degree-end-date').value = degree.end_date;
+//            document.getElementById('degree-gpa').value = degree.gpa || '';
+//            form.dataset.degreeId = degree.id;
+//
+//            addPrivacyControlToForm('degree-form', degree.is_public);
+//        } else {
+//            modalTitle.textContent = 'Add New Degree';
+//
+//            form.reset();
+//            delete form.dataset.degreeId;
+//
+//            addPrivacyControlToForm('degree-form', true); // Default to public
+//        }
+//
+//        modal.classList.add('visible');
+//    }
 
-        const form = e.target;
-        const formData = new FormData(form);
-        const skillId = form.dataset.skillId;
 
-        const data = {
-            type: formData.get('type'),
-            title: formData.get('title'),
-            status: formData.get('status'),
-            is_public: formData.get('is_public') === 'on',  // Add this line
-            acquired_at_sources: [] // Add sources logic if needed
-        };
-
-        try {
-            const url = skillId ? `/api/skills/${skillId}` : '/api/skills';
-            const method = skillId ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error('Failed to save skill');
-
-            modals.skill.classList.remove('visible');
-            showNotification(`Skill ${skillId ? 'updated' : 'added'} successfully`, 'success');
-            loadProfileContent();
-
-        } catch (error) {
-            console.error('Error saving skill:', error);
-            showNotification('Failed to save skill', 'error');
-        }
-    }
+//    async function handleExperienceFormSubmit(e) {
+//        e.preventDefault();
+//
+//        const form = e.target;
+//        const formData = new FormData(form);
+//        const experienceId = form.dataset.experienceId;
+//
+//        const data = {
+//            position_title: formData.get('position_title'),
+//            employer: formData.get('employer'),
+//            country: formData.get('country'),
+//            city: formData.get('city'),
+//            start_date: formData.get('start_date'),
+//            end_date: formData.get('end_date'),
+//            is_present: formData.get('is_present') === 'on',
+//            employment_type: formData.get('employment_type'),
+//            employment_arrangement: formData.get('employment_arrangement'),
+//            is_public: formData.get('is_public') === 'on'  // Add this line
+//        };
+//
+//        try {
+//            const url = experienceId ? `/api/experiences/${experienceId}` : '/api/experiences';
+//            const method = experienceId ? 'PUT' : 'POST';
+//
+//            const response = await fetch(url, {
+//                method: method,
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify(data)
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to save experience');
+//
+//            modals.experience.classList.remove('visible');
+//            showNotification(`Experience ${experienceId ? 'updated' : 'added'} successfully`, 'success');
+//            loadProfileContent();
+//
+//        } catch (error) {
+//            console.error('Error saving experience:', error);
+//            showNotification('Failed to save experience', 'error');
+//        }
+//    }
+//
+//
+//    async function handleCertificateFormSubmit(e) {
+//        e.preventDefault();
+//
+//        const form = e.target;
+//        const formData = new FormData(form);
+//        const certificateId = form.dataset.certificateId;
+//
+//        const data = {
+//            title: formData.get('title'),
+//            issuer: formData.get('issuer'),
+//            issue_date: formData.get('issue_date'),
+//            expiry_date: formData.get('expiry_date'),
+//            credential_id: formData.get('credential_id'),
+//            credential_url: formData.get('credential_url'),
+//            is_public: formData.get('is_public') === 'on'  // Add this line
+//        };
+//
+//        try {
+//            const url = certificateId ? `/api/certificates/${certificateId}` : '/api/certificates';
+//            const method = certificateId ? 'PUT' : 'POST';
+//
+//            const response = await fetch(url, {
+//                method: method,
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify(data)
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to save certificate');
+//
+//            modals.certificate.classList.remove('visible');
+//            showNotification(`Certificate ${certificateId ? 'updated' : 'added'} successfully`, 'success');
+//            loadProfileContent();
+//
+//        } catch (error) {
+//            console.error('Error saving certificate:', error);
+//            showNotification('Failed to save certificate', 'error');
+//        }
+//    }
+//
+//
+//    async function handleDegreeFormSubmit(e) {
+//        e.preventDefault();
+//
+//        const form = e.target;
+//        const formData = new FormData(form);
+//        const degreeId = form.dataset.degreeId;
+//
+//        const data = {
+//            degree: formData.get('degree'),
+//            field_of_study: formData.get('field_of_study'),
+//            school: formData.get('school'),
+//            country: formData.get('country'),
+//            city: formData.get('city'),
+//            start_date: formData.get('start_date'),
+//            end_date: formData.get('end_date'),
+//            gpa: formData.get('gpa'),
+//            is_public: formData.get('is_public') === 'on'  // Add this line
+//        };
+//
+//        try {
+//            const url = degreeId ? `/api/degrees/${degreeId}` : '/api/degrees';
+//            const method = degreeId ? 'PUT' : 'POST';
+//
+//            const response = await fetch(url, {
+//                method: method,
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify(data)
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to save degree');
+//
+//            modals.degree.classList.remove('visible');
+//            showNotification(`Degree ${degreeId ? 'updated' : 'added'} successfully`, 'success');
+//            loadProfileContent();
+//
+//        } catch (error) {
+//            console.error('Error saving degree:', error);
+//            showNotification('Failed to save degree', 'error');
+//        }
+//    }
+//
+//
+//    async function handleSkillFormSubmit(e) {
+//        e.preventDefault();
+//
+//        const form = e.target;
+//        const formData = new FormData(form);
+//        const skillId = form.dataset.skillId;
+//
+//        const data = {
+//            type: formData.get('type'),
+//            title: formData.get('title'),
+//            status: formData.get('status'),
+//            is_public: formData.get('is_public') === 'on',  // Add this line
+//            acquired_at_sources: [] // Add sources logic if needed
+//        };
+//
+//        try {
+//            const url = skillId ? `/api/skills/${skillId}` : '/api/skills';
+//            const method = skillId ? 'PUT' : 'POST';
+//
+//            const response = await fetch(url, {
+//                method: method,
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify(data)
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to save skill');
+//
+//            modals.skill.classList.remove('visible');
+//            showNotification(`Skill ${skillId ? 'updated' : 'added'} successfully`, 'success');
+//            loadProfileContent();
+//
+//        } catch (error) {
+//            console.error('Error saving skill:', error);
+//            showNotification('Failed to save skill', 'error');
+//        }
+//    }
 
 
     // Add privacy toggle event listeners
-    function setupPrivacyToggles() {
-        contentArea.addEventListener('change', async (e) => {
-            if (e.target.classList.contains('privacy-checkbox')) {
-                const id = e.target.dataset.id;
-                const type = e.target.dataset.type;
-                const isPublic = e.target.checked;
+//    function setupPrivacyToggles() {
+//        contentArea.addEventListener('change', async (e) => {
+//            if (e.target.classList.contains('privacy-checkbox')) {
+//                const id = e.target.dataset.id;
+//                const type = e.target.dataset.type;
+//                const isPublic = e.target.checked;
+//
+//                await updatePrivacySetting(id, type, isPublic);
+//
+//                // Update label
+//                const label = e.target.closest('.privacy-control').querySelector('.privacy-label');
+//                label.textContent = isPublic ? 'Public' : 'Private';
+//            }
+//        });
+//    }
+//
+//    async function updatePrivacySetting(id, type, isPublic) {
+//        try {
+//            const endpoint = `/api/${type}s/${id}`;
+//            const response = await fetch(endpoint, {
+//                method: 'PUT',
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify({ is_public: isPublic })
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to update privacy setting');
+//
+//            showNotification('Privacy setting updated', 'success');
+//
+//        } catch (error) {
+//            console.error('Error updating privacy setting:', error);
+//            showNotification('Failed to update privacy setting', 'error');
+//        }
+//    }
+//
+//    // Call setupPrivacyToggles in the DOMContentLoaded function
+//    setupPrivacyToggles();
 
-                await updatePrivacySetting(id, type, isPublic);
 
-                // Update label
-                const label = e.target.closest('.privacy-control').querySelector('.privacy-label');
-                label.textContent = isPublic ? 'Public' : 'Private';
+    async function loadProfileContent() {
+        contentArea.innerHTML = `
+            <h1>Profile</h1>
+            <div class="profile-section">
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Skills</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="skill-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="skill">Add Skill</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Experience</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="experience-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="experience">Add Experience</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Certificates</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="certificate-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="certificate">Add Certificate</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="tile-header">
+                        <h2>Degrees</h2>
+                        <div class="tile-actions">
+                            <button class="toggle-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <div id="degree-list"></div>
+                        <div class="tile-footer">
+                            <button class="add-btn" data-modal="degree">Add Degree</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        await Promise.all([
+            fetchAndDisplay('skill', 'skill-list', createSkillHTML),
+            fetchAndDisplay('experience', 'experience-list', createExperienceHTML),
+            fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML),
+            fetchAndDisplay('degree', 'degree-list', createDegreeHTML)
+        ]);
+    }
+
+
+
+
+
+    // --- Data Fetching & Display ---
+    async function fetchAndDisplay(type, listId, createHTML) {
+        try {
+            const response = await fetch(`/api/${type}s`);
+            if (!response.ok) throw new Error(`Failed to load ${type}s.`);
+            const items = await response.json();
+            const listElement = document.getElementById(listId);
+            if (listElement) {
+                listElement.innerHTML = items.length > 0 ? items.map(createHTML).join('') : `<p class="empty-list-msg">No ${type}s added yet.</p>`;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // --- HTML Generation Functions ---
+
+    function createSkillHTML(skill) {
+
+        const statusClass = skill.status.toLowerCase();
+        const statusDisplay = skill.status_display || skill.status;
+
+        const sourcesHTML = skill.acquired_at_sources && skill.acquired_at_sources.length > 0
+            ? `<div class="skill-sources">
+                 Acquired at: ${skill.acquired_at_sources.map(source =>
+                     `<span class="source-item">${source.title} (${source.type})</span>`
+                 ).join('')}
+               </div>`
+            : '';
+
+        return `
+            <div class="profile-item skill-item" data-id="${skill.id}" data-type="skill">
+                <div class="item-details">
+                    <h4>${skill.title}</h4>
+                    <p>${skill.type}</p>
+                    <span class="skill-status ${statusClass}">${statusDisplay}</span>
+                    ${sourcesHTML}
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+    }
+
+    // This function loads profile items for the skill form
+    async function loadProfileItemsForSkillForm() {
+        try {
+            const response = await fetch('/api/user/profile-items');
+            if (!response.ok) throw new Error('Failed to load profile items');
+
+            const items = await response.json();
+            const container = document.getElementById('acquired-at-sources');
+
+            if (items.length === 0) {
+                container.innerHTML = '<p class="empty">No experiences, certificates, or degrees found. Please add some first.</p>';
+                container.classList.add('empty');
+                return;
+            }
+
+            container.classList.remove('empty');
+            container.innerHTML = items.map(item => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="source-${item.type}-${item.id}"
+                           value="${item.id}" data-type="${item.type}">
+                    <label for="source-${item.type}-${item.id}">${item.display}</label>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading profile items:', error);
+            document.getElementById('acquired-at-sources').innerHTML =
+                '<p class="error">Error loading profile items. Please try again.</p>';
+        }
+    }
+
+    function createExperienceHTML(exp) {
+        const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
+        const location = [exp.city, exp.country].filter(Boolean).join(', ');
+        return `
+            <div class="profile-item experience-item" data-id="${exp.id}" data-type="experience">
+                <div class="item-details">
+                    <h4>${exp.position_title}</h4>
+                    <p>${exp.employer}</p>
+                    <p class="item-meta">${location}</p>
+                    <p class="item-meta">${dateRange}</p>
+                    <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+    }
+
+    function createCertificateHTML(cert) {
+        const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
+        const credentialLink = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
+        return `
+            <div class="profile-item certificate-item" data-id="${cert.id}" data-type="certificate">
+                <div class="item-details">
+                    <h4>${cert.title}</h4>
+                    <p>${cert.issuer}</p>
+                    <p class="item-meta">${dates}</p>
+                    <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+    }
+
+    function createDegreeHTML(degree) {
+        const location = [degree.city, degree.country].filter(Boolean).join(', ');
+        return `
+            <div class="profile-item degree-item" data-id="${degree.id}" data-type="degree">
+                <div class="item-details">
+                    <h4>${degree.degree} in ${degree.field_of_study}</h4>
+                    <p>${degree.school}</p>
+                    <p class="item-meta">${location}</p>
+                    <p class="item-meta">${degree.start_date} - ${degree.end_date}</p>
+                    <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>`;
+    }
+
+
+    // --- Modal & Form Logic ---
+    async function openModalForEdit(id, type) {
+        try {
+            const response = await fetch(`/api/${type}s/${id}`);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const itemData = await response.json();
+
+            const modal = modals[type];
+            const form = modal.querySelector('.modal-form');
+            form.reset();
+
+            // Special handling for skill modal
+            if (type === 'skill') {
+                await loadProfileItemsForSkillForm();
+
+                // Pre-select the acquired at sources
+                if (itemData.acquired_at_sources) {
+                    itemData.acquired_at_sources.forEach(source => {
+                        const checkbox = form.querySelector(`input[value="${source.id}"][data-type="${source.type.toLowerCase()}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            }
+
+            for (const key in itemData) {
+                if (Object.prototype.hasOwnProperty.call(itemData, key) && key !== 'acquired_at_sources') {
+                    const input = form.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.type === 'checkbox' ? (input.checked = itemData[key]) : (input.value = itemData[key]);
+                    }
+                }
+            }
+
+            if (type === 'experience') {
+                const presentCheckbox = form.querySelector('#present-checkbox');
+                if (presentCheckbox) presentCheckbox.dispatchEvent(new Event('change'));
+            }
+
+            modal.querySelector('h2').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            modal.classList.add('visible');
+        } catch (error) {
+            console.error(`Failed to load ${type} for editing:`, error);
+        }
+    }
+
+
+    function setupGenericForm(modal, onSuccessfulSubmit) {
+        if (!modal) return;
+        const form = modal.querySelector('.modal-form');
+        if (!form) return;
+
+        const closeModal = () => {
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                form.reset();
+                if (form.querySelector('input[name="id"]')) {
+                    form.querySelector('input[name="id"]').value = '';
+                }
+                if (form.id === 'experience-form') {
+                    form.querySelector('#end-date').disabled = false;
+                }
+            }, 300);
+        };
+
+        modal.addEventListener('click', e => {
+            if (e.target === modal || e.target.matches('.modal-close-btn, .modal-cancel-btn')) {
+                closeModal();
+            }
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            // Check if this is a skill form by checking both form ID and modal ID
+            const isSkillForm = this.id === 'skill-form' || modal.id === 'skill-modal';
+
+            if (isSkillForm) {
+                const checkedSources = Array.from(this.querySelectorAll('#acquired-at-sources input[type="checkbox"]:checked'));
+
+                if (checkedSources.length === 0) {
+                    alert('Please select at least one source where you acquired this skill.');
+                    return;
+                }
+
+                data.acquired_at_sources = checkedSources.map(cb => ({
+                    id: parseInt(cb.value),
+                    type: cb.dataset.type
+                }));
+            }
+
+            // Handle specific form data adjustments
+            if (this.id === 'experience-form') data.is_present = formData.has('is_present');
+            if (this.id === 'account-settings-form') delete data.email;
+
+            const id = data.id;
+            const isEdit = id && id !== '';
+            let url, method;
+
+            if (this.id === 'account-settings-form') {
+                url = '/api/account';
+                method = 'PUT';
+            } else {
+                const modalType = modal.id.split('-')[0];
+                method = isEdit ? 'PUT' : 'POST';
+                url = isEdit ? `/api/${modalType}s/${id}` : `/api/${modalType}s`;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || `Operation failed.`);
+                }
+
+                closeModal();
+                if(onSuccessfulSubmit) {
+                   onSuccessfulSubmit();
+                }
+            } catch (error) {
+                console.error(`Form submission error for ${this.id}:`, error);
+                alert(error.message);
             }
         });
     }
 
-    async function updatePrivacySetting(id, type, isPublic) {
-        try {
-            const endpoint = `/api/${type}s/${id}`;
-            const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ is_public: isPublic })
-            });
+    // Setup all modals when DOM loads
+    setupGenericForm(modals.skill, () => fetchAndDisplay('skill', 'skill-list', createSkillHTML));
+    setupGenericForm(modals.experience, () => fetchAndDisplay('experience', 'experience-list', createExperienceHTML));
+    setupGenericForm(modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
+    setupGenericForm(modals.degree, () => fetchAndDisplay('degree', 'degree-list', createDegreeHTML));
+    setupGenericForm(modals.account);
 
-            if (!response.ok) throw new Error('Failed to update privacy setting');
-
-            showNotification('Privacy setting updated', 'success');
-
-        } catch (error) {
-            console.error('Error updating privacy setting:', error);
-            showNotification('Failed to update privacy setting', 'error');
-        }
+    // Handle special UI logic within specific modals
+    if (modals.experience) {
+        modals.experience.querySelector('#present-checkbox')?.addEventListener('change', function() {
+            const endDateInput = modals.experience.querySelector('#end-date');
+            endDateInput.disabled = this.checked;
+            if (this.checked) endDateInput.value = '';
+        });
     }
 
-    // Call setupPrivacyToggles in the DOMContentLoaded function
-    setupPrivacyToggles();
-
-
-    function loadHomeContent() {
-        contentArea.innerHTML = '<h1>Home</h1>';
+    // Confirmation Modal Logic
+    if (modals.confirm) {
+        modals.confirm.addEventListener('click', async function(event) {
+            if (event.target === this || event.target.matches('.modal-cancel-btn, .modal-close-btn')) {
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
+            }
+            if (event.target.matches('#confirm-delete-action-btn')) {
+                if (!itemToDelete.id || !itemToDelete.type) return;
+                const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
+                if (response.ok) {
+                   loadProfileContent(); // Easiest way to reflect removal is to reload the section
+                } else {
+                    alert(`Failed to remove ${itemToDelete.type}.`);
+                }
+                this.classList.remove('visible');
+                itemToDelete = { id: null, type: null };
+            }
+        });
     }
+
+
+
+    // =================================================================
+    // JOB SECTION
+    // =================================================================
+
 
     function loadJobContent() {
         contentArea.innerHTML = `
@@ -867,299 +1331,299 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         // Setup application event listeners
-    function setupApplicationEventListeners() {
-        // Status change listeners
-        contentArea.addEventListener('change', async (e) => {
-            if (e.target.classList.contains('status-selector') && e.target.dataset.applicationId) {
-                const applicationId = e.target.dataset.applicationId;
-                const newStatus = e.target.value;
-                await updateApplicationStatus(applicationId, newStatus);
-            }
-        });
-
-        // Checkbox listeners for bulk actions
-        contentArea.addEventListener('change', (e) => {
-            if (e.target.classList.contains('application-checkbox')) {
-                const applicationId = e.target.dataset.applicationId;
-                const jobId = e.target.closest('.application-card').dataset.jobId;
-
-                if (e.target.checked) {
-                    selectedApplications.add(applicationId);
-                } else {
-                    selectedApplications.delete(applicationId);
-                }
-
-                updateBulkActionsVisibility(jobId);
-            }
-        });
-
-        // Bulk action buttons
-        contentArea.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('apply-bulk-btn')) {
-                const jobId = e.target.dataset.jobId;
-                const statusSelect = document.getElementById(`bulk-status-${jobId}`);
-                const newStatus = statusSelect.value;
-
-                if (!newStatus) {
-                    alert('Please select a status');
-                    return;
-                }
-
-                await applyBulkStatusUpdate(Array.from(selectedApplications), newStatus);
-                selectedApplications.clear();
-                updateBulkActionsVisibility(jobId);
-            }
-
-            if (e.target.classList.contains('cancel-bulk-btn')) {
-                const jobId = e.target.dataset.jobId;
-                selectedApplications.clear();
-                updateBulkActionsVisibility(jobId);
-                // Uncheck all checkboxes
-                contentArea.querySelectorAll('.application-checkbox').forEach(cb => cb.checked = false);
-            }
-
-            if (e.target.classList.contains('view-profile-btn')) {
-                const applicantId = e.target.dataset.applicantId;
-                await showCandidateProfile(applicantId);
-            }
-        });
-
-        // Application filter listeners
-        contentArea.addEventListener('change', (e) => {
-            if (e.target.classList.contains('applications-filter')) {
-                const filterValue = e.target.value;
-                const applicationCards = e.target.closest('.job-applications-section').querySelectorAll('.application-card');
-
-                applicationCards.forEach(card => {
-                    const status = card.querySelector('.application-status').textContent.toLowerCase().replace(' ', '_');
-                    if (!filterValue || status.includes(filterValue)) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-        });
-    }
+//    function setupApplicationEventListeners() {
+//        // Status change listeners
+//        contentArea.addEventListener('change', async (e) => {
+//            if (e.target.classList.contains('status-selector') && e.target.dataset.applicationId) {
+//                const applicationId = e.target.dataset.applicationId;
+//                const newStatus = e.target.value;
+//                await updateApplicationStatus(applicationId, newStatus);
+//            }
+//        });
+//
+//        // Checkbox listeners for bulk actions
+//        contentArea.addEventListener('change', (e) => {
+//            if (e.target.classList.contains('application-checkbox')) {
+//                const applicationId = e.target.dataset.applicationId;
+//                const jobId = e.target.closest('.application-card').dataset.jobId;
+//
+//                if (e.target.checked) {
+//                    selectedApplications.add(applicationId);
+//                } else {
+//                    selectedApplications.delete(applicationId);
+//                }
+//
+//                updateBulkActionsVisibility(jobId);
+//            }
+//        });
+//
+//        // Bulk action buttons
+//        contentArea.addEventListener('click', async (e) => {
+//            if (e.target.classList.contains('apply-bulk-btn')) {
+//                const jobId = e.target.dataset.jobId;
+//                const statusSelect = document.getElementById(`bulk-status-${jobId}`);
+//                const newStatus = statusSelect.value;
+//
+//                if (!newStatus) {
+//                    alert('Please select a status');
+//                    return;
+//                }
+//
+//                await applyBulkStatusUpdate(Array.from(selectedApplications), newStatus);
+//                selectedApplications.clear();
+//                updateBulkActionsVisibility(jobId);
+//            }
+//
+//            if (e.target.classList.contains('cancel-bulk-btn')) {
+//                const jobId = e.target.dataset.jobId;
+//                selectedApplications.clear();
+//                updateBulkActionsVisibility(jobId);
+//                // Uncheck all checkboxes
+//                contentArea.querySelectorAll('.application-checkbox').forEach(cb => cb.checked = false);
+//            }
+//
+//            if (e.target.classList.contains('view-profile-btn')) {
+//                const applicantId = e.target.dataset.applicantId;
+//                await showCandidateProfile(applicantId);
+//            }
+//        });
+//
+//        // Application filter listeners
+//        contentArea.addEventListener('change', (e) => {
+//            if (e.target.classList.contains('applications-filter')) {
+//                const filterValue = e.target.value;
+//                const applicationCards = e.target.closest('.job-applications-section').querySelectorAll('.application-card');
+//
+//                applicationCards.forEach(card => {
+//                    const status = card.querySelector('.application-status').textContent.toLowerCase().replace(' ', '_');
+//                    if (!filterValue || status.includes(filterValue)) {
+//                        card.style.display = 'block';
+//                    } else {
+//                        card.style.display = 'none';
+//                    }
+//                });
+//            }
+//        });
+//    }
 
 
     // Update bulk actions visibility
-    function updateBulkActionsVisibility(jobId) {
-        const bulkActions = document.getElementById(`bulk-actions-${jobId}`);
-        if (bulkActions) {
-            if (selectedApplications.size > 0) {
-                bulkActions.classList.remove('hidden');
-            } else {
-                bulkActions.classList.add('hidden');
-            }
-        }
-    }
+//    function updateBulkActionsVisibility(jobId) {
+//        const bulkActions = document.getElementById(`bulk-actions-${jobId}`);
+//        if (bulkActions) {
+//            if (selectedApplications.size > 0) {
+//                bulkActions.classList.remove('hidden');
+//            } else {
+//                bulkActions.classList.add('hidden');
+//            }
+//        }
+//    }
 
     // Update the status change event listener in setupApplicationEventListeners
-    async function updateApplicationStatus(applicationId, newStatus) {
-        try {
-            const response = await fetch(`/api/applications/${applicationId}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (!response.ok) throw new Error('Failed to update status');
-
-            // Update the UI immediately
-            const applicationCard = document.querySelector(`[data-application-id="${applicationId}"]`);
-            if (applicationCard) {
-                const statusBadge = applicationCard.querySelector('.application-status');
-                if (statusBadge) {
-                    // Remove old status class
-                    statusBadge.className = statusBadge.className.replace(/status-\w+/, '');
-                    // Add new status class
-                    statusBadge.classList.add(`status-${newStatus}`);
-                    statusBadge.textContent = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                }
-            }
-
-            showNotification('Application status updated successfully', 'success');
-
-        } catch (error) {
-            console.error('Error updating application status:', error);
-            showNotification('Failed to update application status', 'error');
-        }
-    }
+//    async function updateApplicationStatus(applicationId, newStatus) {
+//        try {
+//            const response = await fetch(`/api/applications/${applicationId}/status`, {
+//                method: 'PATCH',
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify({ status: newStatus })
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to update status');
+//
+//            // Update the UI immediately
+//            const applicationCard = document.querySelector(`[data-application-id="${applicationId}"]`);
+//            if (applicationCard) {
+//                const statusBadge = applicationCard.querySelector('.application-status');
+//                if (statusBadge) {
+//                    // Remove old status class
+//                    statusBadge.className = statusBadge.className.replace(/status-\w+/, '');
+//                    // Add new status class
+//                    statusBadge.classList.add(`status-${newStatus}`);
+//                    statusBadge.textContent = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+//                }
+//            }
+//
+//            showNotification('Application status updated successfully', 'success');
+//
+//        } catch (error) {
+//            console.error('Error updating application status:', error);
+//            showNotification('Failed to update application status', 'error');
+//        }
+//    }
 
     // Apply bulk status update
-    async function applyBulkStatusUpdate(applicationIds, newStatus) {
-        try {
-            const response = await fetch('/api/applications/bulk-update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    application_ids: applicationIds,
-                    status: newStatus
-                })
-            });
-
-            if (!response.ok) throw new Error('Failed to update applications');
-
-            const result = await response.json();
-            showNotification(`Successfully updated ${result.updated_count} applications`, 'success');
-
-            // Refresh the applications list
-            loadAllApplications();
-
-        } catch (error) {
-            console.error('Error bulk updating applications:', error);
-            showNotification('Failed to update applications', 'error');
-        }
-    }
+//    async function applyBulkStatusUpdate(applicationIds, newStatus) {
+//        try {
+//            const response = await fetch('/api/applications/bulk-update', {
+//                method: 'POST',
+//                headers: {
+//                    'Content-Type': 'application/json'
+//                },
+//                body: JSON.stringify({
+//                    application_ids: applicationIds,
+//                    status: newStatus
+//                })
+//            });
+//
+//            if (!response.ok) throw new Error('Failed to update applications');
+//
+//            const result = await response.json();
+//            showNotification(`Successfully updated ${result.updated_count} applications`, 'success');
+//
+//            // Refresh the applications list
+//            loadAllApplications();
+//
+//        } catch (error) {
+//            console.error('Error bulk updating applications:', error);
+//            showNotification('Failed to update applications', 'error');
+//        }
+//    }
 
 
     // Show candidate profile modal
-    async function showCandidateProfile(applicantId) {
-        try {
-            const response = await fetch(`/api/profile/${applicantId}/public`);
-            if (!response.ok) throw new Error('Failed to load profile');
-
-            const profile = await response.json();
-
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay visible';
-            modal.innerHTML = `
-                <div class="modal-content large-modal">
-                    <button class="modal-close-btn">&times;</button>
-                    <h2>${profile.first_name} ${profile.last_name}'s Profile</h2>
-                    <div class="candidate-profile-content">
-                        <div class="profile-section">
-                            <h3>Basic Information</h3>
-                            <p><strong>Email:</strong> ${profile.email}</p>
-                            <p><strong>Location:</strong> ${profile.city}, ${profile.country}</p>
-                            <p><strong>Bio:</strong> ${profile.bio || 'No bio provided'}</p>
-                        </div>
-
-                        ${profile.skills && profile.skills.length > 0 ? `
-                            <div class="profile-section">
-                                <h3>Skills (${profile.skills.length})</h3>
-                                ${profile.skills.map(skill => `
-                                    <div class="profile-item">
-                                        <div class="item-details">
-                                            <h4>${skill.title}</h4>
-                                            <p>Type: ${skill.type}</p>
-                                            <p>Status: ${skill.status}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-
-                        ${profile.experiences && profile.experiences.length > 0 ? `
-                            <div class="profile-section">
-                                <h3>Experience (${profile.experiences.length})</h3>
-                                ${profile.experiences.map(exp => `
-                                    <div class="profile-item">
-                                        <div class="item-details">
-                                            <h4>${exp.position_title}</h4>
-                                            <p>${exp.employer} • ${exp.city}, ${exp.country}</p>
-                                            <p>${exp.start_date} - ${exp.is_present ? 'Present' : exp.end_date}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-
-                        ${profile.certificates && profile.certificates.length > 0 ? `
-                            <div class="profile-section">
-                                <h3>Certificates (${profile.certificates.length})</h3>
-                                ${profile.certificates.map(cert => `
-                                    <div class="profile-item">
-                                        <div class="item-details">
-                                            <h4>${cert.title}</h4>
-                                            <p>Issued by: ${cert.issuer}</p>
-                                            <p>Issue Date: ${cert.issue_date}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-
-                        ${profile.degrees && profile.degrees.length > 0 ? `
-                            <div class="profile-section">
-                                <h3>Education (${profile.degrees.length})</h3>
-                                ${profile.degrees.map(degree => `
-                                    <div class="profile-item">
-                                        <div class="item-details">
-                                            <h4>${degree.degree} in ${degree.field_of_study}</h4>
-                                            <p>${degree.school} • ${degree.city}, ${degree.country}</p>
-                                            <p>${degree.start_date} - ${degree.end_date}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
-                document.body.removeChild(modal);
-            });
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-
-        } catch (error) {
-            console.error('Error loading candidate profile:', error);
-            showNotification('Failed to load candidate profile', 'error');
-        }
-    }
+//    async function showCandidateProfile(applicantId) {
+//        try {
+//            const response = await fetch(`/api/profile/${applicantId}/public`);
+//            if (!response.ok) throw new Error('Failed to load profile');
+//
+//            const profile = await response.json();
+//
+//            const modal = document.createElement('div');
+//            modal.className = 'modal-overlay visible';
+//            modal.innerHTML = `
+//                <div class="modal-content large-modal">
+//                    <button class="modal-close-btn">&times;</button>
+//                    <h2>${profile.first_name} ${profile.last_name}'s Profile</h2>
+//                    <div class="candidate-profile-content">
+//                        <div class="profile-section">
+//                            <h3>Basic Information</h3>
+//                            <p><strong>Email:</strong> ${profile.email}</p>
+//                            <p><strong>Location:</strong> ${profile.city}, ${profile.country}</p>
+//                            <p><strong>Bio:</strong> ${profile.bio || 'No bio provided'}</p>
+//                        </div>
+//
+//                        ${profile.skills && profile.skills.length > 0 ? `
+//                            <div class="profile-section">
+//                                <h3>Skills (${profile.skills.length})</h3>
+//                                ${profile.skills.map(skill => `
+//                                    <div class="profile-item">
+//                                        <div class="item-details">
+//                                            <h4>${skill.title}</h4>
+//                                            <p>Type: ${skill.type}</p>
+//                                            <p>Status: ${skill.status}</p>
+//                                        </div>
+//                                    </div>
+//                                `).join('')}
+//                            </div>
+//                        ` : ''}
+//
+//                        ${profile.experiences && profile.experiences.length > 0 ? `
+//                            <div class="profile-section">
+//                                <h3>Experience (${profile.experiences.length})</h3>
+//                                ${profile.experiences.map(exp => `
+//                                    <div class="profile-item">
+//                                        <div class="item-details">
+//                                            <h4>${exp.position_title}</h4>
+//                                            <p>${exp.employer} • ${exp.city}, ${exp.country}</p>
+//                                            <p>${exp.start_date} - ${exp.is_present ? 'Present' : exp.end_date}</p>
+//                                        </div>
+//                                    </div>
+//                                `).join('')}
+//                            </div>
+//                        ` : ''}
+//
+//                        ${profile.certificates && profile.certificates.length > 0 ? `
+//                            <div class="profile-section">
+//                                <h3>Certificates (${profile.certificates.length})</h3>
+//                                ${profile.certificates.map(cert => `
+//                                    <div class="profile-item">
+//                                        <div class="item-details">
+//                                            <h4>${cert.title}</h4>
+//                                            <p>Issued by: ${cert.issuer}</p>
+//                                            <p>Issue Date: ${cert.issue_date}</p>
+//                                        </div>
+//                                    </div>
+//                                `).join('')}
+//                            </div>
+//                        ` : ''}
+//
+//                        ${profile.degrees && profile.degrees.length > 0 ? `
+//                            <div class="profile-section">
+//                                <h3>Education (${profile.degrees.length})</h3>
+//                                ${profile.degrees.map(degree => `
+//                                    <div class="profile-item">
+//                                        <div class="item-details">
+//                                            <h4>${degree.degree} in ${degree.field_of_study}</h4>
+//                                            <p>${degree.school} • ${degree.city}, ${degree.country}</p>
+//                                            <p>${degree.start_date} - ${degree.end_date}</p>
+//                                        </div>
+//                                    </div>
+//                                `).join('')}
+//                            </div>
+//                        ` : ''}
+//                    </div>
+//                </div>
+//            `;
+//
+//            document.body.appendChild(modal);
+//
+//            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+//                document.body.removeChild(modal);
+//            });
+//
+//            modal.addEventListener('click', (e) => {
+//                if (e.target === modal) {
+//                    document.body.removeChild(modal);
+//                }
+//            });
+//
+//        } catch (error) {
+//            console.error('Error loading candidate profile:', error);
+//            showNotification('Failed to load candidate profile', 'error');
+//        }
+//    }
 
 
     // Utility function for notifications
-    function showNotification(message, type = 'info') {
-        // Create a simple notification system
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem;
-            background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
-            color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
-            border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
-            border-radius: 8px;
-            z-index: 10000;
-            max-width: 300px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-        notification.textContent = message;
-
-        document.body.appendChild(notification);
-
-        // Fade in
-        setTimeout(() => {
-            notification.style.opacity = '1';
-        }, 10);
-
-        // Remove after 5 seconds
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, 5000);
-    }
+//    function showNotification(message, type = 'info') {
+//        // Create a simple notification system
+//        const notification = document.createElement('div');
+//        notification.className = `notification notification-${type}`;
+//        notification.style.cssText = `
+//            position: fixed;
+//            top: 20px;
+//            right: 20px;
+//            padding: 1rem;
+//            background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
+//            color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
+//            border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
+//            border-radius: 8px;
+//            z-index: 10000;
+//            max-width: 300px;
+//            opacity: 0;
+//            transition: opacity 0.3s ease;
+//        `;
+//        notification.textContent = message;
+//
+//        document.body.appendChild(notification);
+//
+//        // Fade in
+//        setTimeout(() => {
+//            notification.style.opacity = '1';
+//        }, 10);
+//
+//        // Remove after 5 seconds
+//        setTimeout(() => {
+//            notification.style.opacity = '0';
+//            setTimeout(() => {
+//                if (notification.parentNode) {
+//                    document.body.removeChild(notification);
+//                }
+//            }, 300);
+//        }, 5000);
+//    }
 
 
     function setupJobEventListeners() {
@@ -1908,355 +2372,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function loadProfileContent() {
-        contentArea.innerHTML = `
-            <h1>Profile</h1>
-            <div class="profile-section">
-                <div class="tile">
-                    <div class="tile-header">
-                        <h2>Skills</h2>
-                        <div class="tile-actions">
-                            <button class="toggle-btn">+</button>
-                        </div>
-                    </div>
-                    <div class="tile-content">
-                        <div id="skill-list"></div>
-                        <div class="tile-footer">
-                            <button class="add-btn" data-modal="skill">Add Skill</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="tile">
-                    <div class="tile-header">
-                        <h2>Experience</h2>
-                        <div class="tile-actions">
-                            <button class="toggle-btn">+</button>
-                        </div>
-                    </div>
-                    <div class="tile-content">
-                        <div id="experience-list"></div>
-                        <div class="tile-footer">
-                            <button class="add-btn" data-modal="experience">Add Experience</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="tile">
-                    <div class="tile-header">
-                        <h2>Certificates</h2>
-                        <div class="tile-actions">
-                            <button class="toggle-btn">+</button>
-                        </div>
-                    </div>
-                    <div class="tile-content">
-                        <div id="certificate-list"></div>
-                        <div class="tile-footer">
-                            <button class="add-btn" data-modal="certificate">Add Certificate</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="tile">
-                    <div class="tile-header">
-                        <h2>Degrees</h2>
-                        <div class="tile-actions">
-                            <button class="toggle-btn">+</button>
-                        </div>
-                    </div>
-                    <div class="tile-content">
-                        <div id="degree-list"></div>
-                        <div class="tile-footer">
-                            <button class="add-btn" data-modal="degree">Add Degree</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        await Promise.all([
-            fetchAndDisplay('skill', 'skill-list', createSkillHTML),
-            fetchAndDisplay('experience', 'experience-list', createExperienceHTML),
-            fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML),
-            fetchAndDisplay('degree', 'degree-list', createDegreeHTML)
-        ]);
-    }
-
-    function loadSettingsContent() {
-        contentArea.innerHTML = `
-            <h1>Settings</h1>
-            <div class="settings-section">
-                <h3>Notification Preferences</h3>
-                <div id="notification-settings">
-                    <p class="loading">Loading notification settings...</p>
-                </div>
-            </div>
-            <div class="settings-section">
-                <h3>Account Settings</h3>
-                <button class="btn btn-secondary" id="account-settings-btn">Update Account Information</button>
-            </div>
-        `;
-
-        loadNotificationSettings();
-
-        // Set up account settings button
-        const accountBtn = document.getElementById('account-settings-btn');
-        if (accountBtn) {
-            accountBtn.addEventListener('click', () => {
-                // Open existing account modal
-                if (modals.account) {
-                    modals.account.classList.add('visible');
-                    loadAccountData();
-                }
-            });
-        }
-    }
-
-    async function loadNotificationSettings() {
-        const settingsDiv = document.getElementById('notification-settings');
-
-        try {
-            const response = await fetch('/api/notification-settings');
-            if (!response.ok) throw new Error('Failed to load settings');
-
-            const settings = await response.json();
-
-            settingsDiv.innerHTML = `
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Application Status Updates - Email</h5>
-                        <p class="setting-description">Receive email notifications when your application status changes</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="application-status-email" ${settings.application_status_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Application Status Updates - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications when your application status changes</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="application-status-inapp" ${settings.application_status_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>New Job Matches - Email</h5>
-                        <p class="setting-description">Receive email notifications for jobs matching your profile</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="new-job-matches-email" ${settings.new_job_matches_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>New Job Matches - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications for jobs matching your profile</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="new-job-matches-inapp" ${settings.new_job_matches_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Job Applications - Email</h5>
-                        <p class="setting-description">Receive email notifications when someone applies to your jobs</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="job-application-email" ${settings.job_application_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Job Applications - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications when someone applies to your jobs</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="job-application-inapp" ${settings.job_application_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 2rem;">
-                    <button class="btn btn-primary" id="save-notification-settings">Save Settings</button>
-                </div>
-            `;
-
-            setupNotificationSettingsEventListeners();
-
-        } catch (error) {
-            console.error('Error loading notification settings:', error);
-            settingsDiv.innerHTML = '<div class="error-msg">Failed to load notification settings.</div>';
-        }
-    }
-
-    function setupNotificationSettingsEventListeners() {
-        const saveBtn = document.getElementById('save-notification-settings');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', saveNotificationSettings);
-        }
-    }
-
-    async function saveNotificationSettings() {
-        try {
-            const settings = {
-                application_status_email: document.getElementById('application-status-email').checked,
-                application_status_inapp: document.getElementById('application-status-inapp').checked,
-                new_job_matches_email: document.getElementById('new-job-matches-email').checked,
-                new_job_matches_inapp: document.getElementById('new-job-matches-inapp').checked,
-                job_application_email: document.getElementById('job-application-email').checked,
-                job_application_inapp: document.getElementById('job-application-inapp').checked
-            };
-
-            const response = await fetch('/api/notification-settings', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(settings)
-            });
-
-            if (!response.ok) throw new Error('Failed to save settings');
-
-            showNotification('Notification settings saved successfully', 'success');
-
-        } catch (error) {
-            console.error('Error saving notification settings:', error);
-            showNotification('Failed to save notification settings', 'error');
-        }
-    }
-
-    // --- Data Fetching & Display ---
-    async function fetchAndDisplay(type, listId, createHTML) {
-        try {
-            const response = await fetch(`/api/${type}s`);
-            if (!response.ok) throw new Error(`Failed to load ${type}s.`);
-            const items = await response.json();
-            const listElement = document.getElementById(listId);
-            if (listElement) {
-                listElement.innerHTML = items.length > 0 ? items.map(createHTML).join('') : `<p class="empty-list-msg">No ${type}s added yet.</p>`;
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    // --- HTML Generation Functions ---
-
-    function createSkillHTML(skill) {
-
-        const statusClass = skill.status.toLowerCase();
-        const statusDisplay = skill.status_display || skill.status;
-
-        const sourcesHTML = skill.acquired_at_sources && skill.acquired_at_sources.length > 0
-            ? `<div class="skill-sources">
-                 Acquired at: ${skill.acquired_at_sources.map(source =>
-                     `<span class="source-item">${source.title} (${source.type})</span>`
-                 ).join('')}
-               </div>`
-            : '';
-
-        return `
-            <div class="profile-item skill-item" data-id="${skill.id}" data-type="skill">
-                <div class="item-details">
-                    <h4>${skill.title}</h4>
-                    <p>${skill.type}</p>
-                    <span class="skill-status ${statusClass}">${statusDisplay}</span>
-                    ${sourcesHTML}
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>`;
-    }
-
-    // This function loads profile items for the skill form
-    async function loadProfileItemsForSkillForm() {
-        try {
-            const response = await fetch('/api/user/profile-items');
-            if (!response.ok) throw new Error('Failed to load profile items');
-
-            const items = await response.json();
-            const container = document.getElementById('acquired-at-sources');
-
-            if (items.length === 0) {
-                container.innerHTML = '<p class="empty">No experiences, certificates, or degrees found. Please add some first.</p>';
-                container.classList.add('empty');
-                return;
-            }
-
-            container.classList.remove('empty');
-            container.innerHTML = items.map(item => `
-                <div class="checkbox-item">
-                    <input type="checkbox" id="source-${item.type}-${item.id}"
-                           value="${item.id}" data-type="${item.type}">
-                    <label for="source-${item.type}-${item.id}">${item.display}</label>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('Error loading profile items:', error);
-            document.getElementById('acquired-at-sources').innerHTML =
-                '<p class="error">Error loading profile items. Please try again.</p>';
-        }
-    }
-
-    function createExperienceHTML(exp) {
-        const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
-        const location = [exp.city, exp.country].filter(Boolean).join(', ');
-        return `
-            <div class="profile-item experience-item" data-id="${exp.id}" data-type="experience">
-                <div class="item-details">
-                    <h4>${exp.position_title}</h4>
-                    <p>${exp.employer}</p>
-                    <p class="item-meta">${location}</p>
-                    <p class="item-meta">${dateRange}</p>
-                    <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>`;
-    }
-
-    function createCertificateHTML(cert) {
-        const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
-        const credentialLink = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
-        return `
-            <div class="profile-item certificate-item" data-id="${cert.id}" data-type="certificate">
-                <div class="item-details">
-                    <h4>${cert.title}</h4>
-                    <p>${cert.issuer}</p>
-                    <p class="item-meta">${dates}</p>
-                    <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>`;
-    }
-
-    function createDegreeHTML(degree) {
-        const location = [degree.city, degree.country].filter(Boolean).join(', ');
-        return `
-            <div class="profile-item degree-item" data-id="${degree.id}" data-type="degree">
-                <div class="item-details">
-                    <h4>${degree.degree} in ${degree.field_of_study}</h4>
-                    <p>${degree.school}</p>
-                    <p class="item-meta">${location}</p>
-                    <p class="item-meta">${degree.start_date} - ${degree.end_date}</p>
-                    <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
-                </div>
-                <div class="item-actions">
-                    <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
-                </div>
-            </div>`;
-    }
 
 
     // --- Unified Event Delegation for Main Content Area ---
@@ -2551,48 +2666,158 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // --- Modal & Form Logic ---
-    async function openModalForEdit(id, type) {
+
+///////////////////////////////////
+// SETTINGS SECTION
+///////////////////////////////////
+
+
+    function loadSettingsContent() {
+        contentArea.innerHTML = `
+            <h1>Settings</h1>
+            <div class="settings-section">
+                <h3>Notification Preferences</h3>
+                <div id="notification-settings">
+                    <p class="loading">Loading notification settings...</p>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Account Settings</h3>
+                <button class="btn btn-secondary" id="account-settings-btn">Update Account Information</button>
+            </div>
+        `;
+
+        loadNotificationSettings();
+
+        // Set up account settings button
+        const accountBtn = document.getElementById('account-settings-btn');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => {
+                // Open existing account modal
+                if (modals.account) {
+                    modals.account.classList.add('visible');
+                    loadAccountData();
+                }
+            });
+        }
+    }
+
+    async function loadNotificationSettings() {
+        const settingsDiv = document.getElementById('notification-settings');
+
         try {
-            const response = await fetch(`/api/${type}s/${id}`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const itemData = await response.json();
+            const response = await fetch('/api/notification-settings');
+            if (!response.ok) throw new Error('Failed to load settings');
 
-            const modal = modals[type];
-            const form = modal.querySelector('.modal-form');
-            form.reset();
+            const settings = await response.json();
 
-            // Special handling for skill modal
-            if (type === 'skill') {
-                await loadProfileItemsForSkillForm();
+            settingsDiv.innerHTML = `
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>Application Status Updates - Email</h5>
+                        <p class="setting-description">Receive email notifications when your application status changes</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="application-status-email" ${settings.application_status_email ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>Application Status Updates - In-App</h5>
+                        <p class="setting-description">Receive in-app notifications when your application status changes</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="application-status-inapp" ${settings.application_status_inapp ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>New Job Matches - Email</h5>
+                        <p class="setting-description">Receive email notifications for jobs matching your profile</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="new-job-matches-email" ${settings.new_job_matches_email ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>New Job Matches - In-App</h5>
+                        <p class="setting-description">Receive in-app notifications for jobs matching your profile</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="new-job-matches-inapp" ${settings.new_job_matches_inapp ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>Job Applications - Email</h5>
+                        <p class="setting-description">Receive email notifications when someone applies to your jobs</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="job-application-email" ${settings.job_application_email ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h5>Job Applications - In-App</h5>
+                        <p class="setting-description">Receive in-app notifications when someone applies to your jobs</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="job-application-inapp" ${settings.job_application_inapp ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-primary" id="save-notification-settings">Save Settings</button>
+                </div>
+            `;
 
-                // Pre-select the acquired at sources
-                if (itemData.acquired_at_sources) {
-                    itemData.acquired_at_sources.forEach(source => {
-                        const checkbox = form.querySelector(`input[value="${source.id}"][data-type="${source.type.toLowerCase()}"]`);
-                        if (checkbox) checkbox.checked = true;
-                    });
-                }
-            }
+            setupNotificationSettingsEventListeners();
 
-            for (const key in itemData) {
-                if (Object.prototype.hasOwnProperty.call(itemData, key) && key !== 'acquired_at_sources') {
-                    const input = form.querySelector(`[name="${key}"]`);
-                    if (input) {
-                        input.type === 'checkbox' ? (input.checked = itemData[key]) : (input.value = itemData[key]);
-                    }
-                }
-            }
-
-            if (type === 'experience') {
-                const presentCheckbox = form.querySelector('#present-checkbox');
-                if (presentCheckbox) presentCheckbox.dispatchEvent(new Event('change'));
-            }
-
-            modal.querySelector('h2').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            modal.classList.add('visible');
         } catch (error) {
-            console.error(`Failed to load ${type} for editing:`, error);
+            console.error('Error loading notification settings:', error);
+            settingsDiv.innerHTML = '<div class="error-msg">Failed to load notification settings.</div>';
+        }
+    }
+
+    function setupNotificationSettingsEventListeners() {
+        const saveBtn = document.getElementById('save-notification-settings');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveNotificationSettings);
+        }
+    }
+
+    async function saveNotificationSettings() {
+        try {
+            const settings = {
+                application_status_email: document.getElementById('application-status-email').checked,
+                application_status_inapp: document.getElementById('application-status-inapp').checked,
+                new_job_matches_email: document.getElementById('new-job-matches-email').checked,
+                new_job_matches_inapp: document.getElementById('new-job-matches-inapp').checked,
+                job_application_email: document.getElementById('job-application-email').checked,
+                job_application_inapp: document.getElementById('job-application-inapp').checked
+            };
+
+            const response = await fetch('/api/notification-settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+
+            if (!response.ok) throw new Error('Failed to save settings');
+
+            showNotification('Notification settings saved successfully', 'success');
+
+        } catch (error) {
+            console.error('Error saving notification settings:', error);
+            showNotification('Failed to save notification settings', 'error');
         }
     }
 
@@ -2619,130 +2844,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(error.message);
         }
     }
-
-    function setupGenericForm(modal, onSuccessfulSubmit) {
-        if (!modal) return;
-        const form = modal.querySelector('.modal-form');
-        if (!form) return;
-
-        const closeModal = () => {
-            modal.classList.remove('visible');
-            setTimeout(() => {
-                form.reset();
-                if (form.querySelector('input[name="id"]')) {
-                    form.querySelector('input[name="id"]').value = '';
-                }
-                if (form.id === 'experience-form') {
-                    form.querySelector('#end-date').disabled = false;
-                }
-            }, 300);
-        };
-
-        modal.addEventListener('click', e => {
-            if (e.target === modal || e.target.matches('.modal-close-btn, .modal-cancel-btn')) {
-                closeModal();
-            }
-        });
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
-
-            // Check if this is a skill form by checking both form ID and modal ID
-            const isSkillForm = this.id === 'skill-form' || modal.id === 'skill-modal';
-
-            if (isSkillForm) {
-                const checkedSources = Array.from(this.querySelectorAll('#acquired-at-sources input[type="checkbox"]:checked'));
-
-                if (checkedSources.length === 0) {
-                    alert('Please select at least one source where you acquired this skill.');
-                    return;
-                }
-
-                data.acquired_at_sources = checkedSources.map(cb => ({
-                    id: parseInt(cb.value),
-                    type: cb.dataset.type
-                }));
-            }
-
-            // Handle specific form data adjustments
-            if (this.id === 'experience-form') data.is_present = formData.has('is_present');
-            if (this.id === 'account-settings-form') delete data.email;
-
-            const id = data.id;
-            const isEdit = id && id !== '';
-            let url, method;
-
-            if (this.id === 'account-settings-form') {
-                url = '/api/account';
-                method = 'PUT';
-            } else {
-                const modalType = modal.id.split('-')[0];
-                method = isEdit ? 'PUT' : 'POST';
-                url = isEdit ? `/api/${modalType}s/${id}` : `/api/${modalType}s`;
-            }
-
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || errorData.message || `Operation failed.`);
-                }
-
-                closeModal();
-                if(onSuccessfulSubmit) {
-                   onSuccessfulSubmit();
-                }
-            } catch (error) {
-                console.error(`Form submission error for ${this.id}:`, error);
-                alert(error.message);
-            }
-        });
-    }
-
-    // Setup all modals when DOM loads
-    setupGenericForm(modals.skill, () => fetchAndDisplay('skill', 'skill-list', createSkillHTML));
-    setupGenericForm(modals.experience, () => fetchAndDisplay('experience', 'experience-list', createExperienceHTML));
-    setupGenericForm(modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
-    setupGenericForm(modals.degree, () => fetchAndDisplay('degree', 'degree-list', createDegreeHTML));
-    setupGenericForm(modals.account);
-
-    // Handle special UI logic within specific modals
-    if (modals.experience) {
-        modals.experience.querySelector('#present-checkbox')?.addEventListener('change', function() {
-            const endDateInput = modals.experience.querySelector('#end-date');
-            endDateInput.disabled = this.checked;
-            if (this.checked) endDateInput.value = '';
-        });
-    }
-
-    // Confirmation Modal Logic
-    if (modals.confirm) {
-        modals.confirm.addEventListener('click', async function(event) {
-            if (event.target === this || event.target.matches('.modal-cancel-btn, .modal-close-btn')) {
-                this.classList.remove('visible');
-                itemToDelete = { id: null, type: null };
-            }
-            if (event.target.matches('#confirm-delete-action-btn')) {
-                if (!itemToDelete.id || !itemToDelete.type) return;
-                const response = await fetch(`/api/${itemToDelete.type}s/${itemToDelete.id}`, { method: 'DELETE' });
-                if (response.ok) {
-                   loadProfileContent(); // Easiest way to reflect removal is to reload the section
-                } else {
-                    alert(`Failed to remove ${itemToDelete.type}.`);
-                }
-                this.classList.remove('visible');
-                itemToDelete = { id: null, type: null };
-            }
-        });
-    }
+///////////////////
 
     // --- Initial Load ---
     loadHomeContent();

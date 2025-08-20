@@ -39,6 +39,8 @@ login_manager.login_view = 'login'
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
+
+# Class #1
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -79,12 +81,15 @@ class User(UserMixin, db.Model):
         }
 
 
+# Class #2
 class SkillSource(db.Model):
     __tablename__ = 'skill_sources'
     skill_id = db.Column(db.Integer, db.ForeignKey('skill.id'), primary_key=True)
     source_id = db.Column(db.Integer, primary_key=True)
     source_type = db.Column(db.String(20), primary_key=True)
 
+
+# Class #3
 class Skill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(50), nullable=False)
@@ -97,6 +102,7 @@ class Skill(db.Model):
 
     def get_acquired_at_sources(self):
         """Get all sources where this skill was acquired"""
+        print("Executing get_acquired_at_sources on class Skill: ", self.skill_sources)
         sources = []
 
         for skill_source in self.skill_sources:
@@ -131,6 +137,7 @@ class Skill(db.Model):
         return sources
 
     def to_dict(self):
+        print("Executing to_dict on class Skill: ", self.status)
         status_display = self.status
         if self.status == 'Attested' and self.attestation_count > 0:
             status_display = f"Attested by {self.attestation_count} person{'s' if self.attestation_count != 1 else ''}"
@@ -145,6 +152,8 @@ class Skill(db.Model):
             "acquired_at_sources": self.get_acquired_at_sources(),
         }
 
+
+# Class #4
 class Experience(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     position_title = db.Column(db.String(150), nullable=False)
@@ -159,6 +168,7 @@ class Experience(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
+        print("Executing to_dict on class Experience.")
         return {
             'id': self.id,
             'position_title': self.position_title,
@@ -172,6 +182,8 @@ class Experience(db.Model):
             'employment_arrangement': self.employment_arrangement
         }
 
+
+# Class #5
 class Certificate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -183,6 +195,7 @@ class Certificate(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
+        print("Executing to_dict on class Certificate.")
         return {
             'id': self.id,
             'title': self.title,
@@ -193,6 +206,8 @@ class Certificate(db.Model):
             'credential_url': self.credential_url
         }
 
+
+# Class #6
 class Degree(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     degree = db.Column(db.String(150), nullable=False)
@@ -206,6 +221,7 @@ class Degree(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
+        print("Executing to_dict on class Degree.")
         return {
             'id': self.id,
             'degree': self.degree,
@@ -219,6 +235,7 @@ class Degree(db.Model):
         }
 
 
+# Class #7
 class JobPosting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -244,6 +261,7 @@ class JobPosting(db.Model):
     applications = db.relationship('JobApplication', back_populates='job', lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
+        print("Executing to_dict on class JobPosting.")
         return {
             'id': self.id,
             'title': self.title,
@@ -265,6 +283,7 @@ class JobPosting(db.Model):
         }
 
 
+# Class #8
 class JobApplication(db.Model):
     __tablename__ = 'job_application'
     id = db.Column(db.Integer, primary_key=True)
@@ -278,6 +297,7 @@ class JobApplication(db.Model):
     job = db.relationship('JobPosting', back_populates='applications')
 
     def to_dict(self):
+        print("Executing to_dict on class JobApplication.")
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -287,6 +307,7 @@ class JobApplication(db.Model):
         }
 
 
+# Class #9
 class JobRequiredSkill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
@@ -295,6 +316,7 @@ class JobRequiredSkill(db.Model):
     is_required = db.Column(db.Boolean, default=True)  # Required vs Preferred
 
     def to_dict(self):
+        print("Executing to_dict on class JobRequiredSkill.")
         return {
             'id': self.id,
             'skill_title': self.skill_title,
@@ -303,6 +325,7 @@ class JobRequiredSkill(db.Model):
         }
 
 
+# Class #10
 class JobRequiredExperience(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
@@ -312,6 +335,7 @@ class JobRequiredExperience(db.Model):
     is_required = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
+        print("Executing to_dict on class JobRequiredExperience.")
         return {
             'id': self.id,
             'years_required': self.years_required,
@@ -321,6 +345,7 @@ class JobRequiredExperience(db.Model):
         }
 
 
+# Class #11
 class JobRequiredCertificate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
@@ -329,6 +354,7 @@ class JobRequiredCertificate(db.Model):
     is_required = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
+        print("Executing to_dict on class JobRequiredCertificate.")
         return {
             'id': self.id,
             'certificate_title': self.certificate_title,
@@ -337,6 +363,7 @@ class JobRequiredCertificate(db.Model):
         }
 
 
+# Class #12
 class JobRequiredDegree(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
@@ -345,6 +372,7 @@ class JobRequiredDegree(db.Model):
     is_required = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
+        print("Executing to_dict on class JobRequiredDegree.")
         return {
             'id': self.id,
             'degree_level': self.degree_level,
@@ -353,6 +381,7 @@ class JobRequiredDegree(db.Model):
         }
 
 
+# Class #13
 class Notification(db.Model):
     __tablename__ = 'notifications'
     id = db.Column(db.Integer, primary_key=True)
@@ -364,6 +393,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
+        # print("Executing to_dict on class Notification.")
         return {
             'id': self.id,
             'title': self.title,
@@ -380,10 +410,12 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
+    print("Executing index() on app.")
     return render_template('index.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    print("Executing signup() on app.")
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -413,6 +445,7 @@ def signup():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("Executing login() on app.")
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -426,6 +459,7 @@ def login():
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
+    print("Executing confirm_email(token) on app.")
     try:
         email = s.loads(token, salt='email-confirm', max_age=3600)
     except SignatureExpired:
@@ -442,16 +476,19 @@ def confirm_email(token):
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    print("Executing dashboard() on app.")
     return render_template('dashboard.html')
 
 @app.route('/logout')
 @login_required
 def logout():
+    print("Executing logout() on app.")
     logout_user()
     return redirect(url_for('index'))
 
 # --- Helper for parsing dates ---
 def parse_date(date_str):
+    print("Executing parse_date(date_str) on app.")
     if not date_str:
         return None
     try:
@@ -469,6 +506,7 @@ def parse_date(date_str):
 @app.route('/api/user/profile-items', methods=['GET'])
 @login_required
 def get_user_profile_items():
+    print("Executing get_user_profile_items() on app.")
     experiences = Experience.query.filter_by(user_id=current_user.id).all()
     certificates = Certificate.query.filter_by(user_id=current_user.id).all()
     degrees = Degree.query.filter_by(user_id=current_user.id).all()
@@ -504,6 +542,7 @@ def get_user_profile_items():
 @app.route('/api/skills', methods=['POST'])
 @login_required
 def add_skill():
+    print("Executing add_skill() on app.")
     data = request.get_json()
 
     if data is None:
@@ -543,12 +582,14 @@ def add_skill():
 @app.route('/api/skills', methods=['GET'])
 @login_required
 def get_skills():
+    print("Executing get_skills() on app.")
     skills = Skill.query.filter_by(user_id=current_user.id).all()
     return jsonify([s.to_dict() for s in skills])
 
 @app.route('/api/skills/<int:skill_id>', methods=['GET'])
 @login_required
 def get_skill(skill_id):
+    print("Executing get_skill(skill_id) on app.")
     skill = Skill.query.get_or_404(skill_id)
     if skill.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -557,6 +598,7 @@ def get_skill(skill_id):
 @app.route('/api/skills/<int:skill_id>', methods=['PUT'])
 @login_required
 def update_skill(skill_id):
+    print("Executing update_skill(skill_id) on app.")
     skill = Skill.query.get_or_404(skill_id)
 
     if skill.user_id != current_user.id:
@@ -595,6 +637,7 @@ def update_skill(skill_id):
 @app.route('/api/skills/<int:skill_id>', methods=['DELETE'])
 @login_required
 def delete_skill(skill_id):
+    print("Executing delete_skill(skill_id) on app.")
     skill = Skill.query.get_or_404(skill_id)
     if skill.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -606,12 +649,14 @@ def delete_skill(skill_id):
 @app.route('/api/experiences', methods=['GET'])
 @login_required
 def get_experiences():
+    print("Executing get_experiences() on app.")
     exps = Experience.query.filter_by(user_id=current_user.id).order_by(Experience.is_present.desc(), Experience.end_date.desc(), Experience.start_date.desc()).all()
     return jsonify([exp.to_dict() for exp in exps])
 
 @app.route('/api/experiences', methods=['POST'])
 @login_required
 def add_experience():
+    print("Executing add_experience() on app.")
     data = request.get_json()
     new_experience = Experience(
         user_id=current_user.id,
@@ -631,6 +676,7 @@ def add_experience():
 @app.route('/api/experiences/<int:id>', methods=['GET'])
 @login_required
 def get_experience(id):
+    print("Executing get_experience(id) on app.")
     cert = Experience.query.filter_by(id=id, user_id=current_user.id).first()
     if cert is None:
         return jsonify({'message': 'Experience not found'}), 404
@@ -639,6 +685,7 @@ def get_experience(id):
 @app.route('/api/experiences/<int:id>', methods=['PUT'])
 @login_required
 def edit_experience(id):
+    print("Executing edit_experience(id) on app.")
     exp = Experience.query.get_or_404(id)
     if exp.user_id != current_user.id:
         return jsonify({'error': 'Forbidden'}), 403
@@ -658,6 +705,7 @@ def edit_experience(id):
 @app.route('/api/experiences/<int:id>', methods=['DELETE'])
 @login_required
 def delete_experience(id):
+    print("Executing delete_experience(id) on app.")
     exp = Experience.query.get_or_404(id)
     if exp.user_id != current_user.id: return jsonify({'error': 'Forbidden'}), 403
     db.session.delete(exp)
@@ -668,12 +716,14 @@ def delete_experience(id):
 @app.route('/api/certificates', methods=['GET'])
 @login_required
 def get_certificates():
+    print("Executing get_certificates() on app.")
     certs = Certificate.query.filter_by(user_id=current_user.id).order_by(Certificate.issue_date.desc()).all()
     return jsonify([cert.to_dict() for cert in certs])
 
 @app.route('/api/certificates', methods=['POST'])
 @login_required
 def add_certificate():
+    print("Executing add_certificate() on app.")
     data = request.get_json()
     new_cert = Certificate(
         user_id=current_user.id,
@@ -691,6 +741,7 @@ def add_certificate():
 @app.route('/api/certificates/<int:id>', methods=['GET'])
 @login_required
 def get_certificate(id):
+    print("Executing get_certificate(id) on app.")
     cert = Certificate.query.filter_by(id=id, user_id=current_user.id).first()
     if cert is None:
         return jsonify({'message': 'Certificate not found'}), 404
@@ -699,6 +750,7 @@ def get_certificate(id):
 @app.route('/api/certificates/<int:id>', methods=['PUT'])
 @login_required
 def edit_certificate(id):
+    print("Executing edit_certificate(id) on app.")
     cert = Certificate.query.get_or_404(id)
     if cert.user_id != current_user.id:
         return jsonify({'error': 'Forbidden'}), 403
@@ -715,6 +767,7 @@ def edit_certificate(id):
 @app.route('/api/certificates/<int:id>', methods=['DELETE'])
 @login_required
 def delete_certificate(id):
+    print("Executing delete_certificate(id) on app.")
     cert = Certificate.query.get_or_404(id)
     if cert.user_id != current_user.id: return jsonify({'error': 'Forbidden'}), 403
     db.session.delete(cert)
@@ -725,12 +778,15 @@ def delete_certificate(id):
 @app.route('/api/degrees', methods=['GET'])
 @login_required
 def get_degrees():
+    print("Executing get_degrees() on app.")
+
     degrees = Degree.query.filter_by(user_id=current_user.id).order_by(Degree.end_date.desc()).all()
     return jsonify([degree.to_dict() for degree in degrees])
 
 @app.route('/api/degrees', methods=['POST'])
 @login_required
 def add_degree():
+    print("Executing add_degree() on app.")
     data = request.get_json()
     new_degree = Degree(
         user_id=current_user.id,
@@ -749,6 +805,7 @@ def add_degree():
 @app.route('/api/degrees/<int:id>', methods=['GET'])
 @login_required
 def get_degree(id):
+    print("Executing get_degree(id) on app.")
     cert = Degree.query.filter_by(id=id, user_id=current_user.id).first()
     if cert is None:
         return jsonify({'message': 'Degree not found'}), 404
@@ -757,6 +814,7 @@ def get_degree(id):
 @app.route('/api/degrees/<int:id>', methods=['PUT'])
 @login_required
 def edit_degree(id):
+    print("Executing edit_degree(id) on app.")
     degree = Degree.query.get_or_404(id)
     if degree.user_id != current_user.id:
         return jsonify({'error': 'Forbidden'}), 403
@@ -775,16 +833,19 @@ def edit_degree(id):
 @app.route('/api/degrees/<int:id>', methods=['DELETE'])
 @login_required
 def delete_degree(id):
+    print("Executing delete_degree(id) on app.")
     degree = Degree.query.get_or_404(id)
     if degree.user_id != current_user.id: return jsonify({'error': 'Forbidden'}), 403
     db.session.delete(degree)
     db.session.commit()
     return jsonify({'message': 'Degree deleted successfully'}), 200
 
+
 # --- API Endpoints for Account ---
 @app.route('/api/account', methods=['GET'])
 @login_required
 def get_account():
+    print("Executing get_account() on app.")
     return jsonify(current_user.to_dict())
 
 @app.route('/api/account', methods=['PUT'])
@@ -806,6 +867,7 @@ def update_account():
 @app.route('/api/jobs', methods=['POST'])
 @login_required
 def create_job():
+    print("Executing create_job() on app.")
     data = request.get_json()
 
     try:
@@ -878,6 +940,7 @@ def create_job():
 @app.route('/api/jobs', methods=['GET'])
 @login_required
 def get_jobs():
+    print("Executing get_jobs() on app.")
     # Get jobs posted by current user (for employers)
     jobs = JobPosting.query.filter_by(posted_by=current_user.id).order_by(JobPosting.created_at.desc()).all()
     return jsonify([job.to_dict() for job in jobs])
@@ -886,6 +949,7 @@ def get_jobs():
 @app.route('/api/jobs/browse', methods=['GET'])
 @login_required
 def browse_jobs():
+    print("Executing browse_jobs() on app.")
     try:
         # Query all job postings that are not 'Draft' or 'Archived'
         jobs = JobPosting.query.filter(
@@ -904,6 +968,7 @@ def browse_jobs():
 @app.route('/api/jobs/<int:job_id>', methods=['GET'])
 @login_required
 def get_job(job_id):
+    print("Executing get_job(job_id) on app.")
     job = JobPosting.query.get_or_404(job_id)
     if job.posted_by != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -913,6 +978,7 @@ def get_job(job_id):
 @app.route('/api/jobs/<int:job_id>', methods=['PUT'])
 @login_required
 def update_job(job_id):
+    print("Executing update_job(job_id) on app.")
     job = JobPosting.query.get_or_404(job_id)
     if job.posted_by != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -988,6 +1054,7 @@ def update_job(job_id):
 @app.route('/api/jobs/<int:job_id>', methods=['DELETE'])
 @login_required
 def delete_job(job_id):
+    print("Executing delete_job(job_id) on app.")
     job = JobPosting.query.get_or_404(job_id)
     if job.posted_by != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -1000,6 +1067,7 @@ def delete_job(job_id):
 @app.route('/api/jobs/<int:job_id>/status', methods=['PUT'])
 @login_required
 def update_job_status(job_id):
+    print("Executing update_job_status(job_id) on app.")
     job = JobPosting.query.get_or_404(job_id)
     if job.posted_by != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
@@ -1020,6 +1088,7 @@ def update_job_status(job_id):
 @app.route('/api/jobs/<int:job_id>/apply', methods=['POST'])
 @login_required
 def apply_to_job(job_id):
+    print("Executing apply_to_job(job_id) on app.")
     """Handles a user's application to a specific job."""
     job = JobPosting.query.get_or_404(job_id)
 
@@ -1065,6 +1134,7 @@ def apply_to_job(job_id):
 @app.route('/api/applications', methods=['GET'])
 @login_required
 def get_received_applications():
+    print("Executing get_received_applications() on app.")
     """
     API endpoint for a user to view all applications for their job postings.
     """
@@ -1101,6 +1171,7 @@ def get_received_applications():
 @app.route('/api/applications/<int:application_id>/status', methods=['PUT'])
 @login_required
 def update_application_status(application_id):
+    print("Executing update_application_status(application_id) on app.")
     """
     Updates the status of a specific job application.
     Accessible only by the user who posted the job.
