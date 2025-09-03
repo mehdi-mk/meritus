@@ -908,15 +908,17 @@ h4 {
 }
 
 .filters-row {
-    display: grid;
-    grid-template-columns: 2fr 1.5fr 1fr 1fr auto auto;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
-    align-items: end;
+    align-items: flex-end;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
+    flex-basis: 200px;
 }
 
 .filter-input, .filter-select {
@@ -1115,11 +1117,6 @@ h4 {
 
 /* Responsive design for job filters */
 @media (max-width: 768px) {
-    .filters-row {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-
     .job-seeker-footer {
         flex-direction: column;
         align-items: flex-start;
@@ -1203,6 +1200,44 @@ h4 {
     display: flex;
     justify-content: flex-start;
     align-items: center;
+}
+
+.eligibility-switch-container {
+    display: flex;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.eligibility-switch-option {
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.eligibility-switch-option:not(.active):hover {
+    background-color: #d8dde2;
+}
+
+/* Active State for "All Jobs" (Default/Gray) */
+.eligibility-switch-option.active[data-value="all"] {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Active State for "Eligible Jobs" (Blue) */
+.eligibility-switch-option.active[data-value="eligible"] {
+    background-color: var(--primary-color);
+    color: var(--white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .eligibility-toggle {
@@ -1309,6 +1344,10 @@ h4 {
     background-color: #6c757d !important;
     border-color: #6c757d !important;
     transform: none;
+}
+
+.apply-job-btn .fa-check {
+    margin-right: 0.5rem;
 }
 
 
@@ -1746,3 +1785,82 @@ h4 {
     color: var(--dark-color);
     margin: 0;
 }
+
+.filter-notice {
+    background: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.application-filters {
+    margin-bottom: 1.5rem;
+}
+
+.filter-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 300px;
+}
+
+.dropdown-button {
+    width: 100%;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.dropdown-button i {
+    transition: transform 0.2s ease;
+}
+
+.filter-dropdown.open .dropdown-button i {
+    transform: rotate(180deg);
+}
+
+.dropdown-panel {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 0.25rem;
+    box-shadow: var(--shadow);
+    z-index: 100;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.filter-dropdown.open .dropdown-panel {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background: var(--light-color);
+}
+
+.dropdown-item input[type="checkbox"] {
+    margin-right: 0.75rem;
+}
+

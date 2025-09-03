@@ -35,6 +35,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Close the job filter dropdown when clicking outside of it.
+    document.addEventListener('click', function(event) {
+        const filterDropdown = document.querySelector('.filter-dropdown.open');
+        if (filterDropdown && !filterDropdown.contains(event.target)) {
+            filterDropdown.classList.remove('open');
+        }
+    });
+
     // Setting up an event listener that automatically handles status updates for job applications
     contentArea.addEventListener('change', async (event) => {
         // Check if the event was triggered by the application status dropdown.
@@ -780,12 +788,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <button class="btn btn-secondary" id="clear-filters-btn">Clear</button>
                         </div>
                         <div class="eligibility-filter-row">
-                            <div class="eligibility-toggle">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="eligibility-filter">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <span class="toggle-label" id="eligibility-toggle-label">See all jobs</span>
+                            <div id="eligibility-switch" class="eligibility-switch-container">
+                                <button class="eligibility-switch-option active" data-value="all">See All Jobs</button>
+                                <button class="eligibility-switch-option" data-value="eligible">See Eligible Jobs Only</button>
                             </div>
                         </div>
                     </div>
@@ -830,6 +835,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <div id="all-applications" class="hire-tab-pane">
                         <h3>All Applications</h3>
+                        <div id="applications-filter-container"></div>
+                        <div id="employer-applications-filter-status"></div>
                         <div id="employer-applications-list">
                             <p class="loading">Loading applications...</p>
                         </div>
@@ -875,6 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadEmployerJobs();
                 } else if (tabName === 'applications') {
                     loadAllApplications();
+                    populateJobFilterDropdown();
                 }
             }
         });
@@ -900,13 +908,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Set up event listeners for dynamic content
-        setupJobEventListeners();
+//        setupJobEventListeners();
 
         // Set up filters
         const searchBtn = contentArea.querySelector('#search-jobs-btn');
         const clearBtn = contentArea.querySelector('#clear-filters-btn');
-        const eligibilityToggle = contentArea.querySelector('#eligibility-filter');
-        const eligibilityLabel = contentArea.querySelector('#eligibility-toggle-label');
 
         if (searchBtn) {
             searchBtn.addEventListener('click', loadAvailableJobs);
@@ -918,18 +924,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 contentArea.querySelector('#location-filter').value = '';
                 contentArea.querySelector('#type-filter').value = '';
                 contentArea.querySelector('#arrangement-filter').value = '';
-                loadAvailableJobs();
-            });
-        }
-
-        // Set up eligibility filter toggle
-        if (eligibilityToggle && eligibilityLabel) {
-            eligibilityToggle.addEventListener('change', () => {
-                if (eligibilityToggle.checked) {
-                    eligibilityLabel.textContent = 'See eligible jobs';
-                } else {
-                    eligibilityLabel.textContent = 'See all jobs';
-                }
                 loadAvailableJobs();
             });
         }
@@ -1241,38 +1235,57 @@ document.addEventListener('DOMContentLoaded', function() {
 //    }
 
 
-    function setupJobEventListeners() {
-        // Use event delegation for dynamically added elements
-        contentArea.addEventListener('click', (e) => {
-            if (e.target.classList.contains('view-applications-btn')) {
-                const jobId = e.target.dataset.jobId;
-                openApplicationsWindow(jobId);
-            }
-        });
-    }
+//    function setupJobEventListeners() {
+//        // Use event delegation for dynamically added elements
+//        contentArea.addEventListener('click', (e) => {
+//            if (e.target.classList.contains('view-applications-btn')) {
+//                const jobId = e.target.dataset.jobId;
+//                openApplicationsWindow(jobId);
+//            }
+//        });
+//    }
 
 
     // Load all applications for employer
-    async function loadAllApplications() {
-        // This ID matches the one in your existing loadJobContent function
+    async function loadAllApplications(jobIds = null) {
         const applicationsContent = document.getElementById('employer-applications-list');
-        if (!applicationsContent) {
-            console.error('Error: Target element "employer-applications-list" not found.');
+        const filterStatus = document.getElementById('employer-applications-filter-status');
+
+        if (!applicationsContent || !filterStatus) {
+            console.error('Error: Target elements for applications not found.');
             return;
         }
 
-        // Start with a loading message
+        // Start with a loading message and clear previous filter status
+        filterStatus.innerHTML = '';
         applicationsContent.innerHTML = '<p class="loading">Loading applications...</p>';
 
         try {
-            const response = await fetch('/api/applications');
+            const url = jobIds ? `/api/applications?job_ids=${jobIds.join(',')}` : '/api/applications';
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch applications: ${response.statusText}`);
             }
             const applications = await response.json();
 
+            // If filtering, show a status message with a clear button
+            if (jobIds && jobIds.length > 0) {
+                 const jobCount = jobIds.length;
+                 const jobTitle = jobCount === 1 && applications.length > 0 ? applications[0].job_title : `${jobCount} jobs`;
+                filterStatus.innerHTML = `
+                    <div class="filter-notice">
+                        <span>Showing applications for: <strong>${jobTitle}</strong></span>
+                        <button class="btn btn-secondary clear-app-filter-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Show All</button>
+                    </div>
+                `;
+            }
+
             if (applications.length === 0) {
-                applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received yet.</div>';
+                if (jobIds && jobIds.length > 0) {
+                     applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received for the selected job(s).</div>';
+                } else {
+                     applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received yet.</div>';
+                }
             } else {
                 applicationsContent.innerHTML = applications.map(createApplicationCardHTML).join('');
             }
@@ -1281,6 +1294,41 @@ document.addEventListener('DOMContentLoaded', function() {
             applicationsContent.innerHTML = '<div class="error-msg">Could not load applications. Please try again later.</div>';
         }
     }
+
+
+    async function openApplicationsWindow(jobId) {
+        // Switch to the 'All Applications' tab
+        const hireTabs = contentArea.querySelector('.hire-tabs');
+        if (hireTabs) {
+            hireTabs.querySelector('.hire-tab-button.active')?.classList.remove('active');
+            const appTab = hireTabs.querySelector('[data-hire-tab="applications"]');
+            if (appTab) appTab.classList.add('active');
+        }
+        contentArea.querySelector('.hire-tab-pane.active')?.classList.remove('active');
+        const appPane = contentArea.querySelector('#all-applications');
+        if (appPane) {
+            appPane.classList.add('active');
+        }
+
+        // Populate the dropdown filter first, which is now necessary here
+        await populateJobFilterDropdown();
+
+        // Now, programmatically check the correct box in the newly populated filter
+        const filterContainer = document.getElementById('applications-filter-container');
+        if (filterContainer) {
+            // Uncheck all boxes first to ensure a clean state
+            filterContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            // Check the box for the specific job
+            const targetCheckbox = filterContainer.querySelector(`input[value="${jobId}"]`);
+            if (targetCheckbox) {
+                targetCheckbox.checked = true;
+            }
+        }
+
+        // Load applications for the specific job, ensuring jobId is passed as an array
+        await loadAllApplications(jobId ? [jobId] : null);
+    }
+
 
     function createApplicationCardHTML(application) {
         const appliedDate = new Date(application.applied_at).toLocaleDateString('en-US', {
@@ -1334,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const location = document.getElementById('location-filter')?.value || '';
             const employmentType = document.getElementById('type-filter')?.value || '';
             const employmentArrangement = document.getElementById('arrangement-filter')?.value || '';
-            const eligibilityFilter = document.getElementById('eligibility-filter')?.checked || false;
+            const eligibleOnly = document.querySelector('#eligibility-switch .active')?.dataset.value === 'eligible';
 
             // Build query parameters
             const params = new URLSearchParams();
@@ -1342,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (location) params.append('location', location);
             if (employmentType) params.append('employment_type', employmentType);
             if (employmentArrangement) params.append('employment_arrangement', employmentArrangement);
-            if (eligibilityFilter) params.append('eligible_only', 'true');
+            if (eligibleOnly) params.append('eligible_only', 'true');
 
             const response = await fetch(`/api/jobs/browse?${params}`);
             if (!response.ok) throw new Error('Failed to load jobs');
@@ -1378,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isEligible = job.user_eligible !== false; // Default to eligible if not specified
         const applyButtonClass = !job.user_applied && isEligible ? 'btn-primary' : 'btn-secondary';
         const applyButtonDisabled = job.user_applied || !isEligible;
-        const applyButtonText = job.user_applied ? 'Applied' :
+        const applyButtonText = job.user_applied ? '<i class="fas fa-check"></i> Already Applied' :
                                !isEligible ? 'Not Eligible' : 'Apply Now';
 
         // Eligibility indicator
@@ -2072,6 +2120,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Job management actions
+
+        const clearAppFilterBtn = event.target.closest('.clear-app-filter-btn');
+        if (clearAppFilterBtn) {
+            await loadAllApplications();
+            // Also clear the dropdown selection
+            const filterContainer = document.getElementById('applications-filter-container');
+            if(filterContainer) {
+                 filterContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+            return;
+        }
+
+        // Handle the custom dropdown for job filtering
+        const dropdownButton = event.target.closest('.dropdown-button');
+        if (dropdownButton) {
+            const dropdown = dropdownButton.closest('.filter-dropdown');
+            dropdown.classList.toggle('open');
+            return;
+        }
+
+        const viewApplicationsBtn = event.target.closest('.view-applications-btn');
+        if (viewApplicationsBtn) {
+            const jobId = viewApplicationsBtn.dataset.jobId;
+            await openApplicationsWindow(jobId);
+            return;
+        }
+
+        const eligibilitySwitch = event.target.closest('.eligibility-switch-option');
+        if (eligibilitySwitch && !eligibilitySwitch.classList.contains('active')) {
+            const container = eligibilitySwitch.closest('.eligibility-switch-container');
+            container.querySelector('.active').classList.remove('active');
+            eligibilitySwitch.classList.add('active');
+            loadAvailableJobs();
+            return;
+        }
+
         const editJobBtn = event.target.closest('.edit-job-btn');
         if (editJobBtn) {
             const jobId = parseInt(editJobBtn.dataset.jobId); // Parse to integer
@@ -2121,6 +2205,58 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
     });
+
+
+    // Populate the job filter dropdown for the applications tab
+    async function populateJobFilterDropdown() {
+        const filterContainer = document.getElementById('applications-filter-container');
+        if (!filterContainer) return;
+
+        try {
+            const response = await fetch('/api/jobs');
+            if (!response.ok) throw new Error('Failed to fetch job postings for filter');
+            const jobs = await response.json();
+
+            if (jobs.length === 0) {
+                filterContainer.innerHTML = ''; // No jobs, no filter
+                return;
+            }
+
+            const jobItems = jobs.map(job => `
+                <label class="dropdown-item">
+                    <input type="checkbox" class="job-filter-checkbox" value="${job.id}">
+                    ${job.title}
+                </label>
+            `).join('');
+
+            filterContainer.innerHTML = `
+                <div class="application-filters">
+                    <div class="filter-dropdown">
+                        <button class="dropdown-button">
+                            <span>Filter by Job Posting</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-panel">
+                            ${jobItems}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners to checkboxes to trigger filtering
+            filterContainer.querySelectorAll('.job-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const selectedIds = Array.from(filterContainer.querySelectorAll('.job-filter-checkbox:checked'))
+                                             .map(cb => cb.value);
+                    loadAllApplications(selectedIds.length > 0 ? selectedIds : null);
+                });
+            });
+
+        } catch(error) {
+            console.error('Error populating job filter dropdown:', error);
+            filterContainer.innerHTML = '<p class="error-msg">Could not load job filter.</p>';
+        }
+    }
 
 
     // Withdraw application
@@ -2336,18 +2472,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loadNotificationSettings();
         loadAccountSettings();
-
-//        // Set up account settings button
-//        const accountBtn = document.getElementById('account-settings-btn');
-//        if (accountBtn) {
-//            accountBtn.addEventListener('click', () => {
-//                // Open existing account modal
-//                if (modals.account) {
-//                    modals.account.classList.add('visible');
-//                    loadAccountData();
-//                }
-//            });
-//        }
     }
 
     async function loadNotificationSettings() {
@@ -2564,7 +2688,10 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(error.message);
         }
     }
+
+
 ///////////////////
+
 
     // --- Initial Load ---
     loadHomeContent();

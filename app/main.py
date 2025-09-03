@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
 from sqlalchemy.sql import func
+from sqlalchemy import or_
 # from .models import User, JobApplication
 
 
@@ -1008,13 +1009,46 @@ def get_jobs():
 def browse_jobs():
     print("Executing browse_jobs() on app.")
     try:
-        # Query all job postings that are not 'Draft' or 'Archived'
-        jobs = JobPosting.query.filter(
+        # Start with a base query for active jobs not posted by the current user.
+        query = JobPosting.query.filter(
             JobPosting.status.notin_(['Draft', 'Archived']),
-            JobPosting.posted_by != current_user.id  # This is the new line
-        ).order_by(JobPosting.created_at.desc()).all()
+            JobPosting.posted_by != current_user.id
+        )
 
-        return jsonify([job.to_dict() for job in jobs]), 200
+        # Get filter parameters from the request
+        search_term = request.args.get('search')
+        location = request.args.get('location')
+        employment_type = request.args.get('employment_type')
+        employment_arrangement = request.args.get('employment_arrangement')
+
+        # Apply filters to the query
+        if search_term:
+            query = query.filter(or_(
+                JobPosting.title.ilike(f'%{search_term}%'),
+                JobPosting.description.ilike(f'%{search_term}%')
+            ))
+        if location:
+            query = query.filter(JobPosting.location.ilike(f'%{location}%'))
+        if employment_type:
+            query = query.filter(JobPosting.employment_type == employment_type)
+        if employment_arrangement:
+            query = query.filter(JobPosting.employment_arrangement == employment_arrangement)
+
+        # Execute the final query
+        jobs = query.order_by(JobPosting.created_at.desc()).all()
+
+        # Get a set of job IDs the current user has applied to for efficient lookup
+        applied_job_ids = {app.job_id for app in JobApplication.query.filter_by(user_id=current_user.id).with_entities(
+            JobApplication.job_id).all()}
+
+        # Prepare the list of jobs, adding the application status for each
+        job_list = []
+        for job in jobs:
+            job_dict = job.to_dict()
+            job_dict['user_applied'] = job.id in applied_job_ids
+            job_list.append(job_dict)
+
+        return jsonify(job_list), 200
 
     except Exception as e:
         # Log the exception for debugging
@@ -1195,7 +1229,10 @@ def get_received_applications():
     """
     API endpoint for a user to view all applications for their job postings.
     """
-    applications = db.session.query(
+    job_id_filter = request.args.get('job_id')
+    job_ids_filter = request.args.get('job_ids')
+
+    query = db.session.query(
         JobApplication.id,
         JobApplication.status,
         JobApplication.applied_at,
@@ -1205,9 +1242,20 @@ def get_received_applications():
         User.email
     ).join(JobPosting, JobApplication.job_id == JobPosting.id)\
      .join(User, JobApplication.user_id == User.id)\
-     .filter(JobPosting.posted_by == current_user.id)\
-     .order_by(JobApplication.applied_at.desc())\
-     .all()
+     .filter(JobPosting.posted_by == current_user.id)
+
+    if job_id_filter:
+        query = query.filter(JobPosting.id == job_id_filter)
+    elif job_ids_filter:
+        try:
+            # Ensure we have a non-empty list of IDs before applying filter
+            job_ids = [int(id) for id in job_ids_filter.split(',') if id]
+            if job_ids:
+                query = query.filter(JobPosting.id.in_(job_ids))
+        except ValueError:
+            return jsonify({"error": "Invalid job IDs provided"}), 400
+
+    applications = query.order_by(JobApplication.applied_at.desc()).all()
 
     # We then format the results into the JSON structure the frontend expects.
     all_applications = [
