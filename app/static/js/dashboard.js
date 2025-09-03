@@ -301,481 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
 
 
-    /* Problem: The Public/Private toggle switch doesn't appear. */
-//    async function loadProfile() {
-//        try {
-//            const response = await fetch('/api/profile');
-//            if (!response.ok) throw new Error('Failed to load profile');
-//            const profile = await response.json();
-//            const profileContainer = document.getElementById('profile-items');
-//            profileContainer.innerHTML = ''; // Clear existing items
-//            profile.skills.forEach(skill => {
-//                profileContainer.appendChild(createProfileItemHTML(skill, 'skill'));
-//            });
-//            profile.experiences.forEach(experience => {
-//                profileContainer.appendChild(createProfileItemHTML(experience, 'experience'));
-//            });
-//            profile.certificates.forEach(certificate => {
-//                profileContainer.appendChild(createProfileItemHTML(certificate, 'certificate'));
-//            });
-//        } catch (error) {
-//            console.error('Error loading profile:', error);
-//        }
-//    }
-//    loadProfile();
-
-
-    // Add privacy control to all modal forms
-    // Main job is to inject a complete, self-contained "Public/Private" visibility control into a specified form.
-//    function addPrivacyControlToForm(formId, isPublic = true) {
-//        const form = document.getElementById(formId);
-//        if (!form) return;
-//
-//        // Check if privacy control already exists
-//        if (form.querySelector('.form-privacy-control')) return;
-//
-//        const privacyHTML = `
-//            <div class="form-group full-width">
-//                <div class="form-privacy-control">
-//                    <div class="privacy-description">
-//                        <div class="privacy-title">Visibility</div>
-//                        <p class="privacy-text">Choose whether this item should be visible on your public profile</p>
-//                    </div>
-//                    <label class="privacy-toggle">
-//                        <input type="checkbox" id="is-public-toggle" name="is_public" ${isPublic ? 'checked' : ''}>
-//                        <span class="privacy-slider"></span>
-//                    </label>
-//                    <span class="privacy-label" id="privacy-status">${isPublic ? 'Public' : 'Private'}</span>
-//                </div>
-//            </div>
-//        `;
-//
-//        // Insert before form actions
-//        const formActions = form.querySelector('.form-actions');
-//        if (formActions) {
-//            formActions.insertAdjacentHTML('beforebegin', privacyHTML);
-//        } else {
-//            form.insertAdjacentHTML('beforeend', privacyHTML);
-//        }
-//
-//        // Add event listener for toggle
-//        const toggle = form.querySelector('#is-public-toggle');
-//        const statusLabel = form.querySelector('#privacy-status');
-//
-//        if (toggle && statusLabel) {
-//            toggle.addEventListener('change', function() {
-//                statusLabel.textContent = this.checked ? 'Public' : 'Private';
-//            });
-//        }
-//    }
-
-
-    // Update the createProfileItemHTML function to include privacy controls
-//    function createProfileItemHTML(item, type) {
-//        let detailsHTML = '';
-//        let metaHTML = '';
-//
-//        switch(type) {
-//            case 'skill':
-//                detailsHTML = `
-//                    <h4>${item.title}</h4>
-//                    <p>Type: ${item.type}</p>
-//                    <p>Status: ${item.status}</p>
-//                `;
-//                break;
-//            case 'experience':
-//                detailsHTML = `
-//                    <h4>${item.position_title}</h4>
-//                    <p>${item.employer} • ${item.city}, ${item.country}</p>
-//                    <p>${item.start_date} - ${item.is_present ? 'Present' : item.end_date}</p>
-//                `;
-//                metaHTML = `${item.employment_type || ''} ${item.employment_arrangement ? '• ' + item.employment_arrangement : ''}`;
-//                break;
-//            case 'certificate':
-//                detailsHTML = `
-//                    <h4>${item.title}</h4>
-//                    <p>Issued by: ${item.issuer}</p>
-//                    <p>Issue Date: ${item.issue_date}</p>
-//                `;
-//                if (item.expiry_date) metaHTML = `Expires: ${item.expiry_date}`;
-//                break;
-//            case 'degree':
-//                detailsHTML = `
-//                    <h4>${item.degree} in ${item.field_of_study}</h4>
-//                    <p>${item.school} • ${item.city}, ${item.country}</p>
-//                    <p>${item.start_date} - ${item.end_date}</p>
-//                `;
-//                if (item.gpa) metaHTML = `GPA: ${item.gpa}`;
-//                break;
-//        }
-//
-//        return `
-//            <div class="profile-item" data-id="${item.id}" data-type="${type}">
-//                <div class="item-details">
-//                    ${detailsHTML}
-//                    ${metaHTML ? `<div class="item-meta">${metaHTML}</div>` : ''}
-//                    <div class="privacy-control">
-//                        <label class="privacy-toggle">
-//                            <input type="checkbox" class="privacy-checkbox"
-//                                   data-id="${item.id}" data-type="${type}"
-//                                   ${item.is_public ? 'checked' : ''}>
-//                            <span class="privacy-slider"></span>
-//                        </label>
-//                        <span class="privacy-label">${item.is_public ? 'Public' : 'Private'}</span>
-//                    </div>
-//                </div>
-//                <div class="item-actions">
-//                    <button class="edit-item-btn" data-id="${item.id}" data-type="${type}">✏️</button>
-//                    <button class="remove-item-btn" data-id="${item.id}" data-type="${type}">🗑️</button>
-//                </div>
-//            </div>
-//        `;
-//    }
-
-
-    // Manage the opening and preparation of modal dialogs for either creating a new profile item or editing an existing one.
-//    function openSkillModal(skill = null) {
-//        const modal = modals.skill;
-//        const form = document.getElementById('skill-form');
-//        const modalTitle = modal.querySelector('h2');
-//
-//        // If a "skill" object is provided, it means the user is editing an existing skill.
-//        if (skill) {
-//            modalTitle.textContent = 'Edit Skill';
-//
-//            // Correctly find and check the radio button that matches the skill's type.
-//            const typeRadioButton = form.querySelector(`input[name="type"][value="${skill.type}"]`);
-//            if (typeRadioButton) {
-//                typeRadioButton.checked = true;
-//            }
-//
-//            document.getElementById('skill-title').value = skill.title;
-//            // The 'skill-status' element is commented out in the HTML, so the line referencing it is removed to prevent an error.
-//            form.dataset.skillId = skill.id;
-//
-//            addPrivacyControlToForm('skill-form', skill.is_public);
-//        }
-//        // Prepare the modal for adding a new skill.
-//        else {
-//            modalTitle.textContent = 'Add New Skill';
-//            form.reset();
-//            delete form.dataset.skillId;
-//
-//            addPrivacyControlToForm('skill-form', true); // Default to public
-//        }
-//
-//        modal.classList.add('visible');
-//    }
-//
-//    // Similar to the above function for skill modal.
-//    function openExperienceModal(experience = null) {
-//        const modal = modals.experience;
-//        const form = document.getElementById('experience-form');
-//        const modalTitle = modal.querySelector('h2');
-//
-//        if (experience) {
-//            modalTitle.textContent = 'Edit Experience';
-//            // Corrected all element IDs to match the HTML.
-//            document.getElementById('position-title').value = experience.position_title;
-//            document.getElementById('employer').value = experience.employer;
-//            document.getElementById('country').value = experience.country;
-//            document.getElementById('city').value = experience.city;
-//            document.getElementById('start-date').value = experience.start_date;
-//            document.getElementById('end-date').value = experience.end_date || '';
-//            document.getElementById('present-checkbox').checked = experience.is_present;
-//            document.getElementById('employment-type').value = experience.employment_type;
-//            document.getElementById('employment-arrangement').value = experience.employment_arrangement;
-//            form.dataset.experienceId = experience.id;
-//
-//            addPrivacyControlToForm('experience-form', experience.is_public);
-//        } else {
-//            modalTitle.textContent = 'Add New Experience';
-//
-//            form.reset();
-//            delete form.dataset.experienceId;
-//
-//            addPrivacyControlToForm('experience-form', true); // Default to public
-//        }
-//
-//        modal.classList.add('visible');
-//    }
-//
-//    // Similar to above functions for skill and experience modals.
-//    function openCertificateModal(certificate = null) {
-//        const modal = modals.certificate;
-//        const form = document.getElementById('certificate-form');
-//        const modalTitle = modal.querySelector('h2');
-//
-//        if (certificate) {
-//            modalTitle.textContent = 'Edit Certificate';
-//            document.getElementById('cert-title').value = certificate.title;
-//            document.getElementById('cert-issuer').value = certificate.issuer;
-//            document.getElementById('cert-issue-date').value = certificate.issue_date;
-//            document.getElementById('cert-expiry-date').value = certificate.expiry_date || '';
-//            // Corrected element IDs for credential fields.
-//            document.getElementById('cert-id').value = certificate.credential_id || '';
-//            document.getElementById('cert-url').value = certificate.credential_url || '';
-//            form.dataset.certificateId = certificate.id;
-//
-//            addPrivacyControlToForm('certificate-form', certificate.is_public);
-//        } else {
-//            modalTitle.textContent = 'Add New Certificate';
-//
-//            form.reset();
-//            delete form.dataset.certificateId;
-//
-//            addPrivacyControlToForm('certificate-form', true); // Default to public
-//        }
-//
-//        modal.classList.add('visible');
-//    }
-//
-//    // Similar to above functions for skill, experience, and degree modals.
-//    function openDegreeModal(degree = null) {
-//        const modal = modals.degree;
-//        const form = document.getElementById('degree-form');
-//        const modalTitle = modal.querySelector('h2');
-//
-//        if (degree) {
-//            modalTitle.textContent = 'Edit Degree';
-//            // Corrected the element ID for the degree level/title.
-//            document.getElementById('degree-degree').value = degree.degree;
-//            document.getElementById('degree-field').value = degree.field_of_study;
-//            document.getElementById('degree-school').value = degree.school;
-//            document.getElementById('degree-country').value = degree.country;
-//            document.getElementById('degree-city').value = degree.city;
-//            document.getElementById('degree-start-date').value = degree.start_date;
-//            document.getElementById('degree-end-date').value = degree.end_date;
-//            document.getElementById('degree-gpa').value = degree.gpa || '';
-//            form.dataset.degreeId = degree.id;
-//
-//            addPrivacyControlToForm('degree-form', degree.is_public);
-//        } else {
-//            modalTitle.textContent = 'Add New Degree';
-//
-//            form.reset();
-//            delete form.dataset.degreeId;
-//
-//            addPrivacyControlToForm('degree-form', true); // Default to public
-//        }
-//
-//        modal.classList.add('visible');
-//    }
-
-
-//    async function handleExperienceFormSubmit(e) {
-//        e.preventDefault();
-//
-//        const form = e.target;
-//        const formData = new FormData(form);
-//        const experienceId = form.dataset.experienceId;
-//
-//        const data = {
-//            position_title: formData.get('position_title'),
-//            employer: formData.get('employer'),
-//            country: formData.get('country'),
-//            city: formData.get('city'),
-//            start_date: formData.get('start_date'),
-//            end_date: formData.get('end_date'),
-//            is_present: formData.get('is_present') === 'on',
-//            employment_type: formData.get('employment_type'),
-//            employment_arrangement: formData.get('employment_arrangement'),
-//            is_public: formData.get('is_public') === 'on'  // Add this line
-//        };
-//
-//        try {
-//            const url = experienceId ? `/api/experiences/${experienceId}` : '/api/experiences';
-//            const method = experienceId ? 'PUT' : 'POST';
-//
-//            const response = await fetch(url, {
-//                method: method,
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify(data)
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to save experience');
-//
-//            modals.experience.classList.remove('visible');
-//            showNotification(`Experience ${experienceId ? 'updated' : 'added'} successfully`, 'success');
-//            loadProfileContent();
-//
-//        } catch (error) {
-//            console.error('Error saving experience:', error);
-//            showNotification('Failed to save experience', 'error');
-//        }
-//    }
-//
-//
-//    async function handleCertificateFormSubmit(e) {
-//        e.preventDefault();
-//
-//        const form = e.target;
-//        const formData = new FormData(form);
-//        const certificateId = form.dataset.certificateId;
-//
-//        const data = {
-//            title: formData.get('title'),
-//            issuer: formData.get('issuer'),
-//            issue_date: formData.get('issue_date'),
-//            expiry_date: formData.get('expiry_date'),
-//            credential_id: formData.get('credential_id'),
-//            credential_url: formData.get('credential_url'),
-//            is_public: formData.get('is_public') === 'on'  // Add this line
-//        };
-//
-//        try {
-//            const url = certificateId ? `/api/certificates/${certificateId}` : '/api/certificates';
-//            const method = certificateId ? 'PUT' : 'POST';
-//
-//            const response = await fetch(url, {
-//                method: method,
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify(data)
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to save certificate');
-//
-//            modals.certificate.classList.remove('visible');
-//            showNotification(`Certificate ${certificateId ? 'updated' : 'added'} successfully`, 'success');
-//            loadProfileContent();
-//
-//        } catch (error) {
-//            console.error('Error saving certificate:', error);
-//            showNotification('Failed to save certificate', 'error');
-//        }
-//    }
-//
-//
-//    async function handleDegreeFormSubmit(e) {
-//        e.preventDefault();
-//
-//        const form = e.target;
-//        const formData = new FormData(form);
-//        const degreeId = form.dataset.degreeId;
-//
-//        const data = {
-//            degree: formData.get('degree'),
-//            field_of_study: formData.get('field_of_study'),
-//            school: formData.get('school'),
-//            country: formData.get('country'),
-//            city: formData.get('city'),
-//            start_date: formData.get('start_date'),
-//            end_date: formData.get('end_date'),
-//            gpa: formData.get('gpa'),
-//            is_public: formData.get('is_public') === 'on'  // Add this line
-//        };
-//
-//        try {
-//            const url = degreeId ? `/api/degrees/${degreeId}` : '/api/degrees';
-//            const method = degreeId ? 'PUT' : 'POST';
-//
-//            const response = await fetch(url, {
-//                method: method,
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify(data)
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to save degree');
-//
-//            modals.degree.classList.remove('visible');
-//            showNotification(`Degree ${degreeId ? 'updated' : 'added'} successfully`, 'success');
-//            loadProfileContent();
-//
-//        } catch (error) {
-//            console.error('Error saving degree:', error);
-//            showNotification('Failed to save degree', 'error');
-//        }
-//    }
-//
-//
-//    async function handleSkillFormSubmit(e) {
-//        e.preventDefault();
-//
-//        const form = e.target;
-//        const formData = new FormData(form);
-//        const skillId = form.dataset.skillId;
-//
-//        const data = {
-//            type: formData.get('type'),
-//            title: formData.get('title'),
-//            status: formData.get('status'),
-//            is_public: formData.get('is_public') === 'on',  // Add this line
-//            acquired_at_sources: [] // Add sources logic if needed
-//        };
-//
-//        try {
-//            const url = skillId ? `/api/skills/${skillId}` : '/api/skills';
-//            const method = skillId ? 'PUT' : 'POST';
-//
-//            const response = await fetch(url, {
-//                method: method,
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify(data)
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to save skill');
-//
-//            modals.skill.classList.remove('visible');
-//            showNotification(`Skill ${skillId ? 'updated' : 'added'} successfully`, 'success');
-//            loadProfileContent();
-//
-//        } catch (error) {
-//            console.error('Error saving skill:', error);
-//            showNotification('Failed to save skill', 'error');
-//        }
-//    }
-
-
-    // Add privacy toggle event listeners
-//    function setupPrivacyToggles() {
-//        contentArea.addEventListener('change', async (e) => {
-//            if (e.target.classList.contains('privacy-checkbox')) {
-//                const id = e.target.dataset.id;
-//                const type = e.target.dataset.type;
-//                const isPublic = e.target.checked;
-//
-//                await updatePrivacySetting(id, type, isPublic);
-//
-//                // Update label
-//                const label = e.target.closest('.privacy-control').querySelector('.privacy-label');
-//                label.textContent = isPublic ? 'Public' : 'Private';
-//            }
-//        });
-//    }
-//
-//    async function updatePrivacySetting(id, type, isPublic) {
-//        try {
-//            const endpoint = `/api/${type}s/${id}`;
-//            const response = await fetch(endpoint, {
-//                method: 'PUT',
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify({ is_public: isPublic })
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to update privacy setting');
-//
-//            showNotification('Privacy setting updated', 'success');
-//
-//        } catch (error) {
-//            console.error('Error updating privacy setting:', error);
-//            showNotification('Failed to update privacy setting', 'error');
-//        }
-//    }
-//
-//    // Call setupPrivacyToggles in the DOMContentLoaded function
-//    setupPrivacyToggles();
-
-
     async function loadProfileContent() {
         contentArea.innerHTML = `
             <h1>Profile</h1>
@@ -865,6 +390,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+
+    // This function loads profile items for the skill form
+    async function loadProfileItemsForSkillForm() {
+        try {
+            const response = await fetch('/api/user/profile-items');
+            if (!response.ok) throw new Error('Failed to load profile items');
+
+            const items = await response.json();
+            const container = document.getElementById('acquired-at-sources');
+
+            if (items.length === 0) {
+                container.innerHTML = '<p class="empty">No experiences, certificates, or degrees found. Please add some first.</p>';
+                container.classList.add('empty');
+                return;
+            }
+
+            container.classList.remove('empty');
+            container.innerHTML = items.map(item => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="source-${item.type}-${item.id}"
+                           value="${item.id}" data-type="${item.type}">
+                    <label for="source-${item.type}-${item.id}">${item.display}</label>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading profile items:', error);
+            document.getElementById('acquired-at-sources').innerHTML =
+                '<p class="error">Error loading profile items. Please try again.</p>';
+        }
+    }
+
+
     // --- HTML Generation Functions ---
 
     function createSkillHTML(skill) {
@@ -904,36 +462,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
     }
 
-    // This function loads profile items for the skill form
-    async function loadProfileItemsForSkillForm() {
-        try {
-            const response = await fetch('/api/user/profile-items');
-            if (!response.ok) throw new Error('Failed to load profile items');
-
-            const items = await response.json();
-            const container = document.getElementById('acquired-at-sources');
-
-            if (items.length === 0) {
-                container.innerHTML = '<p class="empty">No experiences, certificates, or degrees found. Please add some first.</p>';
-                container.classList.add('empty');
-                return;
-            }
-
-            container.classList.remove('empty');
-            container.innerHTML = items.map(item => `
-                <div class="checkbox-item">
-                    <input type="checkbox" id="source-${item.type}-${item.id}"
-                           value="${item.id}" data-type="${item.type}">
-                    <label for="source-${item.type}-${item.id}">${item.display}</label>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('Error loading profile items:', error);
-            document.getElementById('acquired-at-sources').innerHTML =
-                '<p class="error">Error loading profile items. Please try again.</p>';
-        }
-    }
 
     function createExperienceHTML(exp) {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
@@ -2500,23 +2028,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const editBtn = event.target.closest('.edit-item-btn');
         if (editBtn) {
             const item = editBtn.closest('.profile-item');
-            openModalForEdit(item.dataset.id, item.dataset.type);
-            return;
+            if (item) {
+                openModalForEdit(item.dataset.id, item.dataset.type);
+                return;
+            }
         }
 
         const removeBtn = event.target.closest('.remove-item-btn');
         if (removeBtn) {
             const item = removeBtn.closest('.profile-item');
-            itemToDelete = { id: item.dataset.id, type: item.dataset.type };
-            modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
-            modals.confirm.classList.add('visible');
+            if (item) {
+                itemToDelete = { id: item.dataset.id, type: item.dataset.type };
+                modals.confirm.querySelector('#confirm-remove-text').textContent = `Are you sure you want to remove this ${itemToDelete.type}?`;
+                modals.confirm.classList.add('visible');
+                return;
+            }
+        }
+
+        const editAccountBtn = event.target.closest('.edit-account-btn');
+        if (editAccountBtn) {
+            const card = document.getElementById('account-settings-card');
+            if (card && card.dataset.accountData) {
+                const accountData = JSON.parse(card.dataset.accountData);
+                card.innerHTML = createAccountEditHTML(accountData);
+            }
             return;
         }
 
-        // **FIX**: Correctly handle the account edit button click
-        const editAccountBtn = event.target.closest('.edit-account-btn');
-        if (editAccountBtn) {
-            openAccountModal();
+        const saveAccountBtn = event.target.closest('.save-account-btn');
+        if (saveAccountBtn) {
+            saveAccountChanges();
+            return;
+        }
+
+        const cancelAccountBtn = event.target.closest('.cancel-account-btn');
+        if (cancelAccountBtn) {
+            const card = document.getElementById('account-settings-card');
+            if (card && card.dataset.accountData) {
+                const accountData = JSON.parse(card.dataset.accountData);
+                card.innerHTML = createAccountViewHTML(accountData);
+            }
+            return;
         }
 
         // Job management actions
@@ -2776,98 +2328,52 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="settings-section">
                 <h3>Account Settings</h3>
-                <button class="btn btn-secondary" id="account-settings-btn">Update Account Information</button>
+                <div id="account-settings-card" style="position: relative;">
+                    <p class="loading">Loading account settings...</p>
+                </div>
             </div>
         `;
 
         loadNotificationSettings();
+        loadAccountSettings();
 
-        // Set up account settings button
-        const accountBtn = document.getElementById('account-settings-btn');
-        if (accountBtn) {
-            accountBtn.addEventListener('click', () => {
-                // Open existing account modal
-                if (modals.account) {
-                    modals.account.classList.add('visible');
-                    loadAccountData();
-                }
-            });
-        }
+//        // Set up account settings button
+//        const accountBtn = document.getElementById('account-settings-btn');
+//        if (accountBtn) {
+//            accountBtn.addEventListener('click', () => {
+//                // Open existing account modal
+//                if (modals.account) {
+//                    modals.account.classList.add('visible');
+//                    loadAccountData();
+//                }
+//            });
+//        }
     }
 
     async function loadNotificationSettings() {
         const settingsDiv = document.getElementById('notification-settings');
-
         try {
             const response = await fetch('/api/notification-settings');
             if (!response.ok) throw new Error('Failed to load settings');
-
             const settings = await response.json();
+            const isEmailEnabled = settings.delivery_method === 'email_and_in_app';
 
             settingsDiv.innerHTML = `
                 <div class="setting-item">
                     <div class="setting-info">
-                        <h5>Application Status Updates - Email</h5>
-                        <p class="setting-description">Receive email notifications when your application status changes</p>
+                        <h5>Notification Delivery</h5>
+                        <p class="setting-description">Choose how you want to receive notifications from the platform.</p>
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="application-status-email" ${settings.application_status_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Application Status Updates - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications when your application status changes</p>
+                    <div class="privacy-control" style="border: none; padding: 0; justify-content: flex-end; align-items: center;">
+                        <span style="margin-right: 0.5rem;">In App Only</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="delivery-method-toggle" ${isEmailEnabled ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="margin-left: 0.5rem;">Email and In App</span>
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="application-status-inapp" ${settings.application_status_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
                 </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>New Job Matches - Email</h5>
-                        <p class="setting-description">Receive email notifications for jobs matching your profile</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="new-job-matches-email" ${settings.new_job_matches_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>New Job Matches - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications for jobs matching your profile</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="new-job-matches-inapp" ${settings.new_job_matches_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Job Applications - Email</h5>
-                        <p class="setting-description">Receive email notifications when someone applies to your jobs</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="job-application-email" ${settings.job_application_email ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h5>Job Applications - In-App</h5>
-                        <p class="setting-description">Receive in-app notifications when someone applies to your jobs</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="job-application-inapp" ${settings.job_application_inapp ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 2rem;">
-                    <button class="btn btn-primary" id="save-notification-settings">Save Settings</button>
-                </div>
+                <div id="notification-save-status" style="text-align: right; height: 1em; margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;"></div>
             `;
 
             setupNotificationSettingsEventListeners();
@@ -2878,39 +2384,160 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    async function loadAccountSettings() {
+        const card = document.getElementById('account-settings-card');
+        if (!card) return;
+        card.innerHTML = '<p class="loading">Loading account information...</p>';
+        try {
+            const response = await fetch('/api/account');
+            if (!response.ok) throw new Error('Failed to fetch account data.');
+            const accountData = await response.json();
+
+            // Store the data on the element for easy access
+            card.dataset.accountData = JSON.stringify(accountData);
+            card.innerHTML = createAccountViewHTML(accountData);
+
+        } catch (error) {
+            console.error('Error loading account settings:', error);
+            card.innerHTML = '<p class="error-msg">Failed to load account information.</p>';
+        }
+    }
+
+    function createAccountViewHTML(account) {
+        const location = [account.city, account.country].filter(Boolean).join(', ') || 'Not provided';
+        return `
+            <div class="account-view">
+                <div class="item-action-buttons" style="position: absolute; top: 0; right: 0;">
+                     <button class="edit-item-btn edit-account-btn" title="Edit Account"><i class="fas fa-pencil-alt"></i></button>
+                </div>
+                <div class="form-grid" style="gap: 0 1.5rem;">
+                    <div class="form-group"><strong>First Name:</strong><p>${account.first_name || 'Not provided'}</p></div>
+                    <div class="form-group"><strong>Last Name:</strong><p>${account.last_name || 'Not provided'}</p></div>
+                    <div class="form-group full-width"><strong>Email:</strong><p>${account.email}</p></div>
+                    <div class="form-group"><strong>Phone:</strong><p>${account.phone || 'Not provided'}</p></div>
+                    <div class="form-group"><strong>Location:</strong><p>${location}</p></div>
+                    <div class="form-group full-width"><strong>Bio:</strong><p>${account.bio || 'Not provided'}</p></div>
+                </div>
+            </div>`;
+    }
+
+    function createAccountEditHTML(account) {
+        return `
+            <div class="account-edit">
+                 <form id="inline-account-form" class="modal-form form-grid">
+                    <div class="form-group">
+                        <label for="account-edit-first-name">First Name</label>
+                        <input type="text" id="account-edit-first-name" name="first_name" value="${account.first_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="account-edit-last-name">Last Name</label>
+                        <input type="text" id="account-edit-last-name" name="last_name" value="${account.last_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="account-edit-phone">Phone</label>
+                        <input type="tel" id="account-edit-phone" name="phone" value="${account.phone || ''}">
+                    </div>
+                     <div class="form-group">
+                        <label for="account-edit-city">City</label>
+                        <input type="text" id="account-edit-city" name="city" value="${account.city || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="account-edit-country">Country</label>
+                        <input type="text" id="account-edit-country" name="country" value="${account.country || ''}">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="account-edit-bio">Bio</label>
+                        <textarea id="account-edit-bio" name="bio" rows="3">${account.bio || ''}</textarea>
+                    </div>
+                </form>
+                <div class="item-action-buttons" style="position: absolute; top: 0; right: 0;">
+                    <button class="edit-item-btn save-account-btn" title="Save Changes"><i class="fas fa-check"></i></button>
+                    <button class="remove-item-btn cancel-account-btn" title="Cancel"><i class="fas fa-times"></i></button>
+                </div>
+            </div>`;
+    }
+
+    async function saveAccountChanges() {
+        const card = document.getElementById('account-settings-card');
+        const form = document.getElementById('inline-account-form');
+        if (!form || !card) return;
+
+        const data = {
+            first_name: form.querySelector('[name="first_name"]').value,
+            last_name: form.querySelector('[name="last_name"]').value,
+            phone: form.querySelector('[name="phone"]').value,
+            country: form.querySelector('[name="country"]').value,
+            city: form.querySelector('[name="city"]').value,
+            bio: form.querySelector('[name="bio"]').value
+        };
+
+        try {
+            const response = await fetch('/api/account', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save account changes');
+            }
+
+            // Reload the settings to show the updated, non-editable view
+            await loadAccountSettings();
+
+        } catch (error) {
+            console.error('Error saving account settings:', error);
+            // Show an error message within the card
+            const errorDiv = document.createElement('p');
+            errorDiv.className = 'error-msg';
+            errorDiv.textContent = error.message;
+            card.prepend(errorDiv);
+        }
+    }
+
+
     function setupNotificationSettingsEventListeners() {
-        const saveBtn = document.getElementById('save-notification-settings');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', saveNotificationSettings);
+        const toggle = document.getElementById('delivery-method-toggle');
+        if (toggle) {
+            toggle.addEventListener('change', () => {
+                saveNotificationSettings();
+            });
         }
     }
 
     async function saveNotificationSettings() {
-        try {
-            const settings = {
-                application_status_email: document.getElementById('application-status-email').checked,
-                application_status_inapp: document.getElementById('application-status-inapp').checked,
-                new_job_matches_email: document.getElementById('new-job-matches-email').checked,
-                new_job_matches_inapp: document.getElementById('new-job-matches-inapp').checked,
-                job_application_email: document.getElementById('job-application-email').checked,
-                job_application_inapp: document.getElementById('job-application-inapp').checked
-            };
+        const toggle = document.getElementById('delivery-method-toggle');
+        const statusDiv = document.getElementById('notification-save-status');
+        if (!toggle || !statusDiv) return;
 
+        statusDiv.textContent = 'Saving...';
+        statusDiv.style.color = '#6c757d'; // Muted color
+
+        try {
+            const deliveryMethod = toggle.checked ? 'email_and_in_app' : 'in_app';
             const response = await fetch('/api/notification-settings', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(settings)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ delivery_method: deliveryMethod })
             });
 
-            if (!response.ok) throw new Error('Failed to save settings');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save settings');
+            }
 
-            showNotification('Notification settings saved successfully', 'success');
+            statusDiv.textContent = 'Settings saved successfully!';
+            statusDiv.style.color = 'green';
+
+            setTimeout(() => {
+                statusDiv.textContent = '';
+            }, 3000);
 
         } catch (error) {
             console.error('Error saving notification settings:', error);
-            showNotification('Failed to save notification settings', 'error');
+            statusDiv.textContent = `Error: ${error.message}`;
+            statusDiv.style.color = 'red';
         }
     }
 

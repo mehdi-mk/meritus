@@ -390,6 +390,22 @@ class JobRequiredDegree(db.Model):
 
 
 # Class #13
+class NotificationSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    # Options: 'in_app', 'email_and_in_app'
+    delivery_method = db.Column(db.String(50), nullable=False, default='email_and_in_app')
+
+    user = db.relationship('User', backref=db.backref('notification_settings', uselist=False))
+
+    def to_dict(self):
+        return {
+            'delivery_method': self.delivery_method,
+            'isEmailEnabled': self.delivery_method == 'email_and_in_app'
+        }
+
+
+# Class #14
 class Notification(db.Model):
     __tablename__ = 'notifications'
     id = db.Column(db.Integer, primary_key=True)
@@ -401,7 +417,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
-        # print("Executing to_dict on class Notification.")
+        # print ("Executing to_dict on class Notification.")
         return {
             'id': self.id,
             'title': self.title,
@@ -1283,6 +1299,40 @@ def get_my_applications():
 
 
 # NOTIFICATIONS
+
+
+@app.route('/api/notification-settings', methods=['GET'])
+@login_required
+def get_notification_settings():
+    """Fetches or creates notification settings for the current user."""
+    settings = NotificationSettings.query.filter_by(user_id=current_user.id).first()
+    if not settings:
+        settings = NotificationSettings(user_id=current_user.id)
+        db.session.add(settings)
+        db.session.commit()
+    return jsonify(settings.to_dict())
+
+
+@app.route('/api/notification-settings', methods=['PUT'])
+@login_required
+def update_notification_settings():
+    """Updates notification settings for the current user."""
+    data = request.get_json()
+    delivery_method = data.get('delivery_method')
+
+    if delivery_method not in ['in_app', 'email_and_in_app']:
+        return jsonify({"error": "Invalid delivery method"}), 400
+
+    settings = NotificationSettings.query.filter_by(user_id=current_user.id).first()
+    if not settings:
+        settings = NotificationSettings(user_id=current_user.id)
+        db.session.add(settings)
+
+    settings.delivery_method = delivery_method
+    db.session.commit()
+
+    return jsonify({"message": "Settings updated successfully", "settings": settings.to_dict()})
+
 
 @app.route('/api/notifications', methods=['GET'])
 @login_required
