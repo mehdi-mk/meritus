@@ -1744,30 +1744,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add requirement functions
-    function addRequirement(type) {
+    function addRequirement(type, data = {}) {
         const listId = `${type === 'experience' ? 'experience' : type + 's'}-list`;
         const list = document.getElementById(listId);
 
         let requirementHTML = '';
+        const uniqueId = Date.now(); // Unique ID for radio button names
 
         switch(type) {
             case 'skill':
                 requirementHTML = `
                     <div class="requirement-item">
                         <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" placeholder="Skill title" name="skill_title" required>
+                            <div class="form-group flex-grow-2">
+                                <input type="text" placeholder="Skill title" name="skill_title" value="${data.skill_title || ''}" required>
                             </div>
                             <div class="form-group">
                                 <select name="skill_type" required>
-                                    <option value="">Select type</option>
-                                    <option value="Technical">Technical</option>
-                                    <option value="Behavioral">Behavioral</option>
-                                    <option value="Conceptual">Conceptual</option>
+                                    <option value="Technical" ${data.skill_type === 'Technical' ? 'selected' : ''}>Technical</option>
+                                    <option value="Behavioral" ${data.skill_type === 'Behavioral' ? 'selected' : ''}>Behavioral</option>
+                                    <option value="Conceptual" ${data.skill_type === 'Conceptual' ? 'selected' : ''}>Conceptual</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="form-row requirement-options">
+                            <div class="match-type-group">
+                                <label><input type="radio" name="skill_title_match_type_${uniqueId}" value="including" ${(!data.title_match_type || data.title_match_type === 'including') ? 'checked' : ''}> Including</label>
+                                <label><input type="radio" name="skill_title_match_type_${uniqueId}" value="exact" ${data.title_match_type === 'exact' ? 'checked' : ''}> Exact Match</label>
+                            </div>
                             <div class="form-group checkbox-group">
-                                <input type="checkbox" name="skill_required" checked>
+                                <input type="checkbox" name="skill_required" ${data.is_required !== false ? 'checked' : ''}>
                                 <label>Required</label>
                             </div>
                             <button type="button" class="btn btn-danger remove-requirement-btn">Remove</button>
@@ -1778,19 +1784,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
             case 'experience':
                 requirementHTML = `
-                    <div class="requirement-item">
+                     <div class="requirement-item">
                         <div class="form-row">
                             <div class="form-group">
-                                <input type="number" placeholder="Years required" name="years_required" min="0" required>
+                                <label>Years Required</label>
+                                <input type="number" placeholder="Years" name="years_required" min="0" value="${data.years_required || ''}" required>
                             </div>
-                            <div class="form-group">
-                                <input type="text" placeholder="Industry (optional)" name="industry">
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group flex-grow-2">
+                                <label>Position Title</label>
+                                <input type="text" placeholder="e.g., Software Engineer" name="role_title" value="${data.role_title || ''}">
                             </div>
-                            <div class="form-group">
-                                <input type="text" placeholder="Role title (optional)" name="role_title">
+                            <div class="match-type-group align-self-end">
+                                <label><input type="radio" name="exp_title_match_type_${uniqueId}" value="including" ${(!data.role_title_match_type || data.role_title_match_type === 'including') ? 'checked' : ''}> Including</label>
+                                <label><input type="radio" name="exp_title_match_type_${uniqueId}" value="exact" ${data.role_title_match_type === 'exact' ? 'checked' : ''}> Exact Match</label>
                             </div>
-                            <div class="form-group checkbox-group">
-                                <input type="checkbox" name="experience_required" checked>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-grow-2">
+                                <label>Country</label>
+                                <input type="text" placeholder="e.g., USA" name="country" value="${data.country || ''}">
+                            </div>
+                            <div class="match-type-group align-self-end">
+                                <label><input type="radio" name="exp_country_match_type_${uniqueId}" value="including" ${(!data.country_match_type || data.country_match_type === 'including') ? 'checked' : ''}> Including</label>
+                                <label><input type="radio" name="exp_country_match_type_${uniqueId}" value="exact" ${data.country_match_type === 'exact' ? 'checked' : ''}> Exact Match</label>
+                            </div>
+                        </div>
+                        <div class="form-row requirement-options">
+                             <div class="form-group checkbox-group">
+                                <input type="checkbox" name="experience_required" ${data.is_required !== false ? 'checked' : ''}>
                                 <label>Required</label>
                             </div>
                             <button type="button" class="btn btn-danger remove-requirement-btn">Remove</button>
@@ -1803,14 +1826,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 requirementHTML = `
                     <div class="requirement-item">
                         <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" placeholder="Certificate title" name="certificate_title" required>
+                            <div class="form-group flex-grow-2">
+                                <label>Certificate Title</label>
+                                <input type="text" placeholder="e.g., Certified Cloud Practitioner" name="certificate_title" value="${data.certificate_title || ''}" required>
                             </div>
-                            <div class="form-group">
-                                <input type="text" placeholder="Issuer (optional)" name="certificate_issuer">
+                            <div class="match-type-group align-self-end">
+                                <label><input type="radio" name="cert_title_match_type_${uniqueId}" value="including" ${(!data.title_match_type || data.title_match_type === 'including') ? 'checked' : ''}> Including</label>
+                                <label><input type="radio" name="cert_title_match_type_${uniqueId}" value="exact" ${data.title_match_type === 'exact' ? 'checked' : ''}> Exact Match</label>
                             </div>
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group flex-grow-2">
+                                <label>Issuer</label>
+                                <input type="text" placeholder="e.g., Amazon Web Services" name="certificate_issuer" value="${data.issuer || ''}">
+                            </div>
+                             <div class="match-type-group align-self-end">
+                                <label><input type="radio" name="cert_issuer_match_type_${uniqueId}" value="including" ${(!data.issuer_match_type || data.issuer_match_type === 'including') ? 'checked' : ''}> Including</label>
+                                <label><input type="radio" name="cert_issuer_match_type_${uniqueId}" value="exact" ${data.issuer_match_type === 'exact' ? 'checked' : ''}> Exact Match</label>
+                            </div>
+                        </div>
+                        <div class="form-row requirement-options">
                             <div class="form-group checkbox-group">
-                                <input type="checkbox" name="certificate_required" checked>
+                                <input type="checkbox" name="certificate_required" ${data.is_required !== false ? 'checked' : ''}>
                                 <label>Required</label>
                             </div>
                             <button type="button" class="btn btn-danger remove-requirement-btn">Remove</button>
@@ -1820,24 +1857,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
 
             case 'degree':
+                const degreeLevels = ["High School", "Associate's", "Bachelor's", "Master's", "Doctoral"];
+                const optionsHTML = degreeLevels.map(level => `<option value="${level}" ${data.degree_level === level ? 'selected' : ''}>${level}</option>`).join('');
                 requirementHTML = `
                     <div class="requirement-item">
                         <div class="form-row">
                             <div class="form-group">
+                                <label>Minimum Degree Level</label>
                                 <select name="degree_level" required>
-                                    <option value="">Select level</option>
-                                    <option value="High School">High School</option>
-                                    <option value="Associate's">Associate's</option>
-                                    <option value="Bachelor's">Bachelor's</option>
-                                    <option value="Master's">Master's</option>
-                                    <option value="Doctorate">Doctorate</option>
+                                    ${optionsHTML}
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <input type="text" placeholder="Field of study (optional)" name="field_of_study">
+                            <div class="form-group flex-grow-2">
+                                <label>Field of Study (optional)</label>
+                                <input type="text" placeholder="e.g., Computer Science" name="field_of_study" value="${data.field_of_study || ''}">
                             </div>
-                            <div class="form-group checkbox-group">
-                                <input type="checkbox" name="degree_required" checked>
+                        </div>
+                        <div class="form-row requirement-options">
+                             <div class="form-group checkbox-group">
+                                <input type="checkbox" name="degree_required" ${data.is_required !== false ? 'checked' : ''}>
                                 <label>Required</label>
                             </div>
                             <button type="button" class="btn btn-danger remove-requirement-btn">Remove</button>
@@ -1887,6 +1925,7 @@ document.addEventListener('DOMContentLoaded', function() {
             jobData.required_skills.push({
                 title: item.querySelector('[name="skill_title"]').value,
                 type: item.querySelector('[name="skill_type"]').value,
+                title_match_type: item.querySelector('input[name^="skill_title_match_type"]:checked').value,
                 is_required: item.querySelector('[name="skill_required"]').checked
             });
         });
@@ -1894,8 +1933,10 @@ document.addEventListener('DOMContentLoaded', function() {
         form.querySelectorAll('#experience-list .requirement-item').forEach(item => {
             jobData.required_experiences.push({
                 years_required: parseInt(item.querySelector('[name="years_required"]').value),
-                industry: item.querySelector('[name="industry"]').value || null,
                 role_title: item.querySelector('[name="role_title"]').value || null,
+                role_title_match_type: item.querySelector('input[name^="exp_title_match_type"]:checked').value,
+                country: item.querySelector('[name="country"]').value || null,
+                country_match_type: item.querySelector('input[name^="exp_country_match_type"]:checked').value,
                 is_required: item.querySelector('[name="experience_required"]').checked
             });
         });
@@ -1903,7 +1944,9 @@ document.addEventListener('DOMContentLoaded', function() {
         form.querySelectorAll('#certificates-list .requirement-item').forEach(item => {
             jobData.required_certificates.push({
                 title: item.querySelector('[name="certificate_title"]').value,
+                title_match_type: item.querySelector('input[name^="cert_title_match_type"]:checked').value,
                 issuer: item.querySelector('[name="certificate_issuer"]').value || null,
+                issuer_match_type: item.querySelector('input[name^="cert_issuer_match_type"]:checked').value,
                 is_required: item.querySelector('[name="certificate_required"]').checked
             });
         });
@@ -1961,36 +2004,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Load requirements
             job.required_skills.forEach(skill => {
-                addRequirement('skill');
-                const lastSkill = document.querySelector('#skills-list .requirement-item:last-child');
-                lastSkill.querySelector('[name="skill_title"]').value = skill.skill_title;
-                lastSkill.querySelector('[name="skill_type"]').value = skill.skill_type;
-                lastSkill.querySelector('[name="skill_required"]').checked = skill.is_required;
+                addRequirement('skill', skill);
             });
 
             job.required_experiences.forEach(exp => {
-                addRequirement('experience');
-                const lastExp = document.querySelector('#experience-list .requirement-item:last-child');
-                lastExp.querySelector('[name="years_required"]').value = exp.years_required;
-                lastExp.querySelector('[name="industry"]').value = exp.industry || '';
-                lastExp.querySelector('[name="role_title"]').value = exp.role_title || '';
-                lastExp.querySelector('[name="experience_required"]').checked = exp.is_required;
+                addRequirement('experience', exp);
             });
 
             job.required_certificates.forEach(cert => {
-                addRequirement('certificate');
-                const lastCert = document.querySelector('#certificates-list .requirement-item:last-child');
-                lastCert.querySelector('[name="certificate_title"]').value = cert.certificate_title;
-                lastCert.querySelector('[name="certificate_issuer"]').value = cert.issuer || '';
-                lastCert.querySelector('[name="certificate_required"]').checked = cert.is_required;
+                addRequirement('certificate', cert);
             });
 
             job.required_degrees.forEach(degree => {
-                addRequirement('degree');
-                const lastDegree = document.querySelector('#degrees-list .requirement-item:last-child');
-                lastDegree.querySelector('[name="degree_level"]').value = degree.degree_level;
-                lastDegree.querySelector('[name="field_of_study"]').value = degree.field_of_study || '';
-                lastDegree.querySelector('[name="degree_required"]').checked = degree.is_required;
+                addRequirement('degree', degree);
             });
 
         } catch (error) {
@@ -2414,6 +2440,55 @@ document.addEventListener('DOMContentLoaded', function() {
                                         ${skill.is_required ? '' : ' - Preferred'}
                                     </span>`
                                 ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${job.required_experiences && job.required_experiences.length > 0 ? `
+                        <div class="job-requirements">
+                            <h3>Required Experience</h3>
+                            <div class="requirements-list">
+                                ${job.required_experiences.map(exp => {
+                                    let details = `${exp.years_required}+ years`;
+                                    if (exp.role_title) details += ` in a role like "${exp.role_title}"`;
+                                    if (exp.country) details += ` in ${exp.country}`;
+                                    return `<span class="requirement-tag ${exp.is_required ? 'required' : 'preferred'}">
+                                        ${details}
+                                        ${exp.is_required ? '' : ' - Preferred'}
+                                    </span>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${job.required_certificates && job.required_certificates.length > 0 ? `
+                        <div class="job-requirements">
+                            <h3>Required Certificates</h3>
+                            <div class="requirements-list">
+                                ${job.required_certificates.map(cert => {
+                                    let details = cert.certificate_title;
+                                    if (cert.issuer) details += ` from ${cert.issuer}`;
+                                    return `<span class="requirement-tag ${cert.is_required ? 'required' : 'preferred'}">
+                                        ${details}
+                                        ${cert.is_required ? '' : ' - Preferred'}
+                                    </span>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${job.required_degrees && job.required_degrees.length > 0 ? `
+                        <div class="job-requirements">
+                            <h3>Required Degree</h3>
+                            <div class="requirements-list">
+                                ${job.required_degrees.map(degree => {
+                                    let details = degree.degree_level;
+                                    if (degree.field_of_study) details += ` in ${degree.field_of_study}`;
+                                    return `<span class="requirement-tag ${degree.is_required ? 'required' : 'preferred'}">
+                                        ${details}
+                                        ${degree.is_required ? '' : ' - Preferred'}
+                                    </span>`;
+                                }).join('')}
                             </div>
                         </div>
                     ` : ''}

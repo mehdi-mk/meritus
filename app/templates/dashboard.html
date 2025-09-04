@@ -155,7 +155,20 @@
             <h2>Add New Degree</h2>
             <form id="degree-form" class="modal-form">
                 <input type="hidden" name="id">
-                <div class="form-row"><div class="form-group"><label for="degree-degree">Degree</label><input type="text" id="degree-degree" name="degree" required></div><div class="form-group"><label for="degree-field">Field of Study</label><input type="text" id="degree-field" name="field_of_study" required></div></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="degree-degree">Degree</label>
+                        <select id="degree-degree" name="degree" required>
+                            <option value="" disabled selected>Select Degree</option>
+                            <option value="High School">High School</option>
+                            <option value="Associate's">Associate's</option>
+                            <option value="Bachelor's">Bachelor's</option>
+                            <option value="Master's">Master's</option>
+                            <option value="Doctoral">Doctoral</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="degree-field">Field of Study</label><input type="text" id="degree-field" name="field_of_study" required></div>
+                </div>
                 <div class="form-group"><label for="degree-school">School</label><input type="text" id="degree-school" name="school" required></div>
                 <div class="form-row"><div class="form-group"><label for="degree-country">Country</label><input type="text" id="degree-country" name="country"></div><div class="form-group"><label for="degree-city">City</label><input type="text" id="degree-city" name="city"></div></div>
                 <div class="form-row"><div class="form-group"><label for="degree-start-date">Start Date</label><input type="month" id="degree-start-date" name="start_date" required></div><div class="form-group"><label for="degree-end-date">End Date (or Expected)</label><input type="month" id="degree-end-date" name="end_date" required></div></div>

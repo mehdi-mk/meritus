@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.sql import func
 from sqlalchemy import or_
+import enum
 # from .models import User, JobApplication
 
 
@@ -133,7 +134,7 @@ class Skill(db.Model):
                     sources.append({
                         'id': source.id,
                         'type': 'Degree',
-                        'title': f"{source.degree} in {source.field_of_study}"
+                        'title': f"{source.degree.value} in {source.field_of_study}"
                     })
 
         return sources
@@ -215,9 +216,18 @@ class Certificate(db.Model):
 
 
 # Class #6
+class DegreeEnum(enum.Enum):
+    HIGH_SCHOOL = "High School"
+    ASSOCIATE = "Associate's"
+    BACHELOR = "Bachelor's"
+    MASTER = "Master's"
+    DOCTORAL = "Doctoral"
+
+
+# Class #6.1
 class Degree(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    degree = db.Column(db.String(150), nullable=False)
+    degree = db.Column(db.Enum(DegreeEnum, name='degree_enum'), nullable=False)
     field_of_study = db.Column(db.String(150), nullable=False)
     school = db.Column(db.String(150), nullable=False)
     country = db.Column(db.String(100))
@@ -232,8 +242,7 @@ class Degree(db.Model):
         print("Executing to_dict on class Degree.")
         return {
             'id': self.id,
-            'degree': self.degree,
-            'field_of_study': self.field_of_study,
+            'degree': self.degree.value if self.degree else None,
             'school': self.school,
             'country': self.country,
             'city': self.city,
@@ -322,6 +331,7 @@ class JobRequiredSkill(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
     skill_title = db.Column(db.String(150), nullable=False)
     skill_type = db.Column(db.String(50), nullable=False)  # Technical, Behavioral, Conceptual
+    title_match_type = db.Column(db.String(20), nullable=False, default='including')
     is_required = db.Column(db.Boolean, default=True)  # Required vs Preferred
 
     def to_dict(self):
@@ -330,6 +340,7 @@ class JobRequiredSkill(db.Model):
             'id': self.id,
             'skill_title': self.skill_title,
             'skill_type': self.skill_type,
+            'title_match_type': self.title_match_type,
             'is_required': self.is_required
         }
 
@@ -341,6 +352,9 @@ class JobRequiredExperience(db.Model):
     years_required = db.Column(db.Integer, nullable=False)
     industry = db.Column(db.String(100))
     role_title = db.Column(db.String(150))
+    role_title_match_type = db.Column(db.String(20), nullable=False, default='including')
+    country = db.Column(db.String(100))
+    country_match_type = db.Column(db.String(20), nullable=False, default='including')
     is_required = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
@@ -350,6 +364,9 @@ class JobRequiredExperience(db.Model):
             'years_required': self.years_required,
             'industry': self.industry,
             'role_title': self.role_title,
+            'role_title_match_type': self.role_title_match_type,
+            'country': self.country,
+            'country_match_type': self.country_match_type,
             'is_required': self.is_required
         }
 
@@ -359,7 +376,9 @@ class JobRequiredCertificate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
     certificate_title = db.Column(db.String(150), nullable=False)
+    title_match_type = db.Column(db.String(20), nullable=False, default='including')
     issuer = db.Column(db.String(150))
+    issuer_match_type = db.Column(db.String(20), nullable=False, default='including')
     is_required = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
@@ -367,7 +386,9 @@ class JobRequiredCertificate(db.Model):
         return {
             'id': self.id,
             'certificate_title': self.certificate_title,
+            'title_match_type': self.title_match_type,
             'issuer': self.issuer,
+            'issuer_match_type': self.issuer_match_type,
             'is_required': self.is_required
         }
 
@@ -563,8 +584,8 @@ def get_user_profile_items():
         items.append({
             'id': degree.id,
             'type': 'degree',
-            'title': f"{degree.degree} in {degree.field_of_study}",
-            'display': f"{degree.degree} in {degree.field_of_study} (Degree)"
+            'title': f"{degree.degree.value} in {degree.field_of_study}",
+            'display': f"{degree.degree.value} in {degree.field_of_study} (Degree)"
         })
 
     return jsonify(items)
@@ -840,7 +861,7 @@ def add_degree():
     data = request.get_json()
     new_degree = Degree(
         user_id=current_user.id,
-        degree=data['degree'],
+        degree=DegreeEnum(data['degree']),
         field_of_study=data['field_of_study'],
         school=data['school'],
         start_date=parse_date(data.get('start_date')),
@@ -876,7 +897,7 @@ def edit_degree(id):
     if degree.user_id != current_user.id:
         return jsonify({'error': 'Forbidden'}), 403
     data = request.get_json()
-    degree.degree = data['degree']
+    degree.degree = DegreeEnum(data['degree'])
     degree.field_of_study = data['field_of_study']
     degree.school = data['school']
     degree.start_date = parse_date(data['start_date'])
@@ -952,6 +973,7 @@ def create_job():
                 job_id=new_job.id,
                 skill_title=skill['title'],
                 skill_type=skill['type'],
+                title_match_type=skill.get('title_match_type', 'including'),
                 is_required=skill.get('is_required', True)
             )
             db.session.add(job_skill)
@@ -963,6 +985,9 @@ def create_job():
                 years_required=exp['years_required'],
                 industry=exp.get('industry'),
                 role_title=exp.get('role_title'),
+                role_title_match_type=exp.get('role_title_match_type', 'including'),
+                country=exp.get('country'),
+                country_match_type=exp.get('country_match_type', 'including'),
                 is_required=exp.get('is_required', True)
             )
             db.session.add(job_exp)
@@ -972,7 +997,9 @@ def create_job():
             job_cert = JobRequiredCertificate(
                 job_id=new_job.id,
                 certificate_title=cert['title'],
+                title_match_type=cert.get('title_match_type', 'including'),
                 issuer=cert.get('issuer'),
+                issuer_match_type=cert.get('issuer_match_type', 'including'),
                 is_required=cert.get('is_required', True)
             )
             db.session.add(job_cert)
@@ -1009,24 +1036,38 @@ def get_jobs():
 def browse_jobs():
     print("Executing browse_jobs() on app.")
     try:
-        # Start with a base query for active jobs not posted by the current user.
+        # 1. PRE-FETCH USER'S FULL PROFILE FOR EFFICIENCY
+        user_skills = {(s.title.lower(), s.type.lower()) for s in Skill.query.filter_by(user_id=current_user.id)}
+        user_certificates = {(c.title.lower(), c.issuer.lower()) for c in
+                             Certificate.query.filter_by(user_id=current_user.id)}
+        user_experiences = Experience.query.filter_by(user_id=current_user.id).all()
+        user_degrees = Degree.query.filter_by(user_id=current_user.id).all()
+
+        total_experience_years = sum(
+            (exp.end_date.year - exp.start_date.year if exp.end_date else datetime.now().year - exp.start_date.year)
+            for exp in user_experiences
+        )
+        user_exp_tuples = {(e.position_title.lower(), e.country.lower() if e.country else "") for e in user_experiences}
+
+        degree_levels = {"High School": 1, "Associate's": 2, "Bachelor's": 3, "Master's": 4, "Doctoral": 5}
+        max_user_degree_level = max([degree_levels.get(d.degree.value, 0) for d in user_degrees], default=0)
+
+        # 2. START WITH A BASE QUERY for active jobs not posted by the current user.
         query = JobPosting.query.filter(
             JobPosting.status.notin_(['Draft', 'Archived']),
             JobPosting.posted_by != current_user.id
         )
 
-        # Get filter parameters from the request
+        # 3. APPLY SEARCH FILTERS from the request arguments
         search_term = request.args.get('search')
         location = request.args.get('location')
         employment_type = request.args.get('employment_type')
         employment_arrangement = request.args.get('employment_arrangement')
+        eligible_only = request.args.get('eligible_only') == 'true'
 
-        # Apply filters to the query
         if search_term:
-            query = query.filter(or_(
-                JobPosting.title.ilike(f'%{search_term}%'),
-                JobPosting.description.ilike(f'%{search_term}%')
-            ))
+            query = query.filter(
+                or_(JobPosting.title.ilike(f'%{search_term}%'), JobPosting.description.ilike(f'%{search_term}%')))
         if location:
             query = query.filter(JobPosting.location.ilike(f'%{location}%'))
         if employment_type:
@@ -1034,19 +1075,96 @@ def browse_jobs():
         if employment_arrangement:
             query = query.filter(JobPosting.employment_arrangement == employment_arrangement)
 
-        # Execute the final query
-        jobs = query.order_by(JobPosting.created_at.desc()).all()
-
-        # Get a set of job IDs the current user has applied to for efficient lookup
-        applied_job_ids = {app.job_id for app in JobApplication.query.filter_by(user_id=current_user.id).with_entities(
-            JobApplication.job_id).all()}
-
-        # Prepare the list of jobs, adding the application status for each
+        # 4. EXECUTE THE FILTERED QUERY
+        all_jobs = query.order_by(JobPosting.created_at.desc()).all()
         job_list = []
-        for job in jobs:
-            job_dict = job.to_dict()
-            job_dict['user_applied'] = job.id in applied_job_ids
-            job_list.append(job_dict)
+        user_applied_job_ids = {app.job_id for app in
+                                JobApplication.query.filter_by(user_id=current_user.id).with_entities(
+                                    JobApplication.job_id).all()}
+
+        # 5. PERFORM ELIGIBILITY CHECK FOR EACH JOB
+        for job in all_jobs:
+            is_eligible = True  # Assume eligible until a requirement is not met
+
+            # Check Degree requirements
+            if is_eligible and any(req.is_required for req in job.required_degrees):
+                required_level = max(
+                    [degree_levels.get(req.degree_level, 99) for req in job.required_degrees if req.is_required],
+                    default=0)
+                if max_user_degree_level < required_level:
+                    is_eligible = False
+
+            # Check Skill requirements
+            if is_eligible and any(req.is_required for req in job.required_skills):
+                for req in job.required_skills:
+                    if not req.is_required: continue
+                    skill_found = False
+                    for user_skill_title, _ in user_skills:
+                        if req.title_match_type == 'exact' and req.skill_title.lower() == user_skill_title:
+                            skill_found = True
+                            break
+                        elif req.title_match_type == 'including' and req.skill_title.lower() in user_skill_title:
+                            skill_found = True
+                            break
+                    if not skill_found:
+                        is_eligible = False
+                        break
+
+            # Check Certificate requirements
+            if is_eligible and any(req.is_required for req in job.required_certificates):
+                for req in job.required_certificates:
+                    if not req.is_required: continue
+                    cert_found = False
+                    for user_cert_title, user_cert_issuer in user_certificates:
+                        title_match = (not req.certificate_title) or \
+                                      (
+                                                  req.title_match_type == 'exact' and req.certificate_title.lower() == user_cert_title) or \
+                                      (
+                                                  req.title_match_type == 'including' and req.certificate_title.lower() in user_cert_title)
+                        issuer_match = (not req.issuer) or \
+                                       (req.issuer_match_type == 'exact' and req.issuer.lower() == user_cert_issuer) or \
+                                       (req.issuer_match_type == 'including' and req.issuer.lower() in user_cert_issuer)
+                        if title_match and issuer_match:
+                            cert_found = True
+                            break
+                    if not cert_found:
+                        is_eligible = False
+                        break
+
+            # Check Experience requirements
+            if is_eligible and any(req.is_required for req in job.required_experiences):
+                for req in job.required_experiences:
+                    if not req.is_required: continue
+                    # Year check
+                    if total_experience_years < req.years_required:
+                        is_eligible = False
+                        break
+                    # Content check
+                    exp_content_found = False
+                    for user_exp_title, user_exp_country in user_exp_tuples:
+                        title_match = (not req.role_title) or \
+                                      (
+                                                  req.role_title_match_type == 'exact' and req.role_title.lower() == user_exp_title) or \
+                                      (
+                                                  req.role_title_match_type == 'including' and req.role_title.lower() in user_exp_title)
+                        country_match = (not req.country) or \
+                                        (
+                                                    req.country_match_type == 'exact' and req.country.lower() == user_exp_country) or \
+                                        (
+                                                    req.country_match_type == 'including' and req.country.lower() in user_exp_country)
+                        if title_match and country_match:
+                            exp_content_found = True
+                            break
+                    if not exp_content_found:
+                        is_eligible = False
+                        break
+
+            # 6. ADD JOB TO LIST BASED ON ELIGIBILITY FILTER
+            if not eligible_only or is_eligible:
+                job_dict = job.to_dict()
+                job_dict['user_applied'] = job.id in user_applied_job_ids
+                job_dict['user_eligible'] = is_eligible
+                job_list.append(job_dict)
 
         return jsonify(job_list), 200
 
@@ -1061,7 +1179,7 @@ def browse_jobs():
 def get_job(job_id):
     print("Executing get_job(job_id) on app.")
     job = JobPosting.query.get_or_404(job_id)
-    if job.posted_by != current_user.id:
+    if job.posted_by != current_user.id and job.status != 'active':
         return jsonify({"error": "Unauthorized"}), 403
     return jsonify(job.to_dict())
 
@@ -1102,6 +1220,7 @@ def update_job(job_id):
                 job_id=job.id,
                 skill_title=skill['title'],
                 skill_type=skill['type'],
+                title_match_type=skill.get('title_match_type', 'including'),
                 is_required=skill.get('is_required', True)
             )
             db.session.add(job_skill)
@@ -1112,6 +1231,9 @@ def update_job(job_id):
                 years_required=exp['years_required'],
                 industry=exp.get('industry'),
                 role_title=exp.get('role_title'),
+                role_title_match_type=exp.get('role_title_match_type', 'including'),
+                country=exp.get('country'),
+                country_match_type=exp.get('country_match_type', 'including'),
                 is_required=exp.get('is_required', True)
             )
             db.session.add(job_exp)
@@ -1120,7 +1242,9 @@ def update_job(job_id):
             job_cert = JobRequiredCertificate(
                 job_id=job.id,
                 certificate_title=cert['title'],
+                title_match_type=cert.get('title_match_type', 'including'),
                 issuer=cert.get('issuer'),
+                issuer_match_type=cert.get('issuer_match_type', 'including'),
                 is_required=cert.get('is_required', True)
             )
             db.session.add(job_cert)

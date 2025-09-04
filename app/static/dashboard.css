@@ -1864,3 +1864,65 @@ h4 {
     margin-right: 0.75rem;
 }
 
+.dropdown-item input[type="checkbox"] {
+    margin-right: 0.75rem;
+}
+
+/* New Requirement Form Styles */
+.requirement-item {
+    background-color: var(--background-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.requirement-item .form-row {
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+.requirement-item label {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.match-type-group {
+    display: flex;
+    gap: 1rem;
+    background-color: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem; /* Align with other inputs */
+}
+
+.match-type-group label {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.align-self-end {
+    align-self: flex-end;
+    /* This is to align the radio buttons with the text inputs vertically */
+    padding-bottom: 12px;
+    padding-top: 12px;
+}
+
+.requirement-options {
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.flex-grow-2 {
+    flex-grow: 2;
+}
+
