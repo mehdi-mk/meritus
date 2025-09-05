@@ -78,6 +78,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Check if the event was triggered by a "View Profile" button
+        if (event.target.classList.contains('view-profile-btn')) {
+            const applicantId = event.target.dataset.applicantId;
+            if (applicantId) {
+                showApplicantProfileModal(applicantId);
+            }
+        }
+
         // Check if the event was triggered by a privacy toggle checkbox.
         if (event.target.classList.contains('privacy-checkbox')) {
             const checkbox = event.target;
@@ -433,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- HTML Generation Functions ---
 
-    function createSkillHTML(skill) {
+    function createSkillHTML(skill, isPublicView = false) {
 
         const statusClass = skill.status.toLowerCase();
         const statusDisplay = skill.status_display || skill.status;
@@ -446,6 +454,21 @@ document.addEventListener('DOMContentLoaded', function() {
                </div>`
             : '';
 
+        const actionsHTML = !isPublicView ? `
+            <div class="item-actions">
+                <div class="item-action-buttons">
+                    <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="privacy-control">
+                    <label class="privacy-toggle">
+                        <input type="checkbox" class="privacy-checkbox" data-id="${skill.id}" data-type="skill" ${skill.is_public ? 'checked' : ''}>
+                        <span class="privacy-slider"></span>
+                    </label>
+                    <span class="privacy-label">${skill.is_public ? 'Public' : 'Private'}</span>
+                </div>
+            </div>` : '';
+
         return `
             <div class="profile-item skill-item" data-id="${skill.id}" data-type="skill">
                 <div class="item-details">
@@ -454,26 +477,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="skill-status ${statusClass}">${statusDisplay}</span>
                     ${sourcesHTML}
                 </div>
-                <div class="item-actions">
-                    <div class="item-action-buttons">
-                        <button class="edit-item-btn" title="Edit Skill"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="remove-item-btn" title="Remove Skill"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="privacy-control">
-                        <label class="privacy-toggle">
-                            <input type="checkbox" class="privacy-checkbox" data-id="${skill.id}" data-type="skill" ${skill.is_public ? 'checked' : ''}>
-                            <span class="privacy-slider"></span>
-                        </label>
-                        <span class="privacy-label">${skill.is_public ? 'Public' : 'Private'}</span>
-                    </div>
-                </div>
+                ${actionsHTML}
             </div>`;
     }
 
 
-    function createExperienceHTML(exp) {
+    function createExperienceHTML(exp, isPublicView = false) {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
         const location = [exp.city, exp.country].filter(Boolean).join(', ');
+        const actionsHTML = !isPublicView ? `
+            <div class="item-actions">
+                <div class="item-action-buttons">
+                    <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="privacy-control">
+                    <label class="privacy-toggle">
+                        <input type="checkbox" class="privacy-checkbox" data-id="${exp.id}" data-type="experience" ${exp.is_public ? 'checked' : ''}>
+                        <span class="privacy-slider"></span>
+                    </label>
+                    <span class="privacy-label">${exp.is_public ? 'Public' : 'Private'}</span>
+                </div>
+            </div>` : '';
+
         return `
             <div class="profile-item experience-item" data-id="${exp.id}" data-type="experience">
                 <div class="item-details">
@@ -483,25 +509,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${dateRange}</p>
                     <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
                 </div>
-                <div class="item-actions">
-                    <div class="item-action-buttons">
-                        <button class="edit-item-btn" title="Edit Experience"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="remove-item-btn" title="Remove Experience"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="privacy-control">
-                        <label class="privacy-toggle">
-                            <input type="checkbox" class="privacy-checkbox" data-id="${exp.id}" data-type="experience" ${exp.is_public ? 'checked' : ''}>
-                            <span class="privacy-slider"></span>
-                        </label>
-                        <span class="privacy-label">${exp.is_public ? 'Public' : 'Private'}</span>
-                    </div>
-                </div>
+                ${actionsHTML}
             </div>`;
     }
 
-    function createCertificateHTML(cert) {
+
+    function createCertificateHTML(cert, isPublicView = false) {
         const dates = cert.expiry_date ? `${cert.issue_date} - ${cert.expiry_date}` : `Issued ${cert.issue_date}`;
         const credentialLink = cert.credential_url ? `<a href="${cert.credential_url}" target="_blank">View Credential</a>` : '';
+        const actionsHTML = !isPublicView ? `
+            <div class="item-actions">
+                <div class="item-action-buttons">
+                    <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="privacy-control">
+                    <label class="privacy-toggle">
+                        <input type="checkbox" class="privacy-checkbox" data-id="${cert.id}" data-type="certificate" ${cert.is_public ? 'checked' : ''}>
+                        <span class="privacy-slider"></span>
+                    </label>
+                    <span class="privacy-label">${cert.is_public ? 'Public' : 'Private'}</span>
+                </div>
+            </div>` : '';
+
         return `
             <div class="profile-item certificate-item" data-id="${cert.id}" data-type="certificate">
                 <div class="item-details">
@@ -510,24 +540,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${dates}</p>
                     <p class="item-meta">ID: ${cert.credential_id || 'N/A'} ${credentialLink ? `&middot; ${credentialLink}` : ''}</p>
                 </div>
-                <div class="item-actions">
-                    <div class="item-action-buttons">
-                        <button class="edit-item-btn" title="Edit Certificate"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="remove-item-btn" title="Remove Certificate"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="privacy-control">
-                        <label class="privacy-toggle">
-                            <input type="checkbox" class="privacy-checkbox" data-id="${cert.id}" data-type="certificate" ${cert.is_public ? 'checked' : ''}>
-                            <span class="privacy-slider"></span>
-                        </label>
-                        <span class="privacy-label">${cert.is_public ? 'Public' : 'Private'}</span>
-                    </div>
-                </div>
+                ${actionsHTML}
             </div>`;
     }
 
-    function createDegreeHTML(degree) {
+
+    function createDegreeHTML(degree, isPublicView = false) {
         const location = [degree.city, degree.country].filter(Boolean).join(', ');
+        const actionsHTML = !isPublicView ? `
+            <div class="item-actions">
+                <div class="item-action-buttons">
+                    <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="privacy-control">
+                    <label class="privacy-toggle">
+                        <input type="checkbox" class="privacy-checkbox" data-id="${degree.id}" data-type="degree" ${degree.is_public ? 'checked' : ''}>
+                        <span class="privacy-slider"></span>
+                    </label>
+                    <span class="privacy-label">${degree.is_public ? 'Public' : 'Private'}</span>
+                </div>
+            </div>` : '';
+
         return `
             <div class="profile-item degree-item" data-id="${degree.id}" data-type="degree">
                 <div class="item-details">
@@ -537,22 +571,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${degree.start_date} - ${degree.end_date}</p>
                     <p class="item-meta">GPA: ${degree.gpa || 'N/A'}</p>
                 </div>
-                <div class="item-actions">
-                    <div class="item-action-buttons">
-                        <button class="edit-item-btn" title="Edit Degree"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="remove-item-btn" title="Remove Degree"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="privacy-control">
-                        <label class="privacy-toggle">
-                            <input type="checkbox" class="privacy-checkbox" data-id="${degree.id}" data-type="degree" ${degree.is_public ? 'checked' : ''}>
-                            <span class="privacy-slider"></span>
-                        </label>
-                        <span class="privacy-label">${degree.is_public ? 'Public' : 'Private'}</span>
-                    </div>
-                </div>
+                ${actionsHTML}
             </div>`;
     }
-
 
 
     // --- Modal & Form Logic ---
@@ -824,6 +845,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="hire-tabs">
                         <button class="hire-tab-button active" data-hire-tab="postings">Job Postings</button>
                         <button class="hire-tab-button" data-hire-tab="applications">All Applications</button>
+                        <button class="hire-tab-button" data-hire-tab="applicants">All Applicants</button>
                     </div>
 
                     <div id="job-postings" class="hire-tab-pane active">
@@ -839,6 +861,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div id="employer-applications-filter-status"></div>
                         <div id="employer-applications-list">
                             <p class="loading">Loading applications...</p>
+                        </div>
+                    </div>
+
+                    <div id="all-applicants" class="hire-tab-pane">
+                        <h3>All Applicants</h3>
+                        <div id="employer-applicants-list">
+                            <p class="loading">Loading applicants...</p>
                         </div>
                     </div>
                 </div>
@@ -870,12 +899,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target.classList.contains('hire-tab-button')) {
                 if (e.target.classList.contains('active')) return;
 
-                const tabName = e.target.dataset.hireTab;
+                const tabName = e.target.dataset.hireTab; // e.g., 'postings', 'applications', 'applicants'
+
+                // Deactivate old tab and pane
                 contentArea.querySelector('.hire-tab-button.active').classList.remove('active');
+                const activePane = contentArea.querySelector('.hire-tab-pane.active');
+                if(activePane) activePane.classList.remove('active');
+
+                // Activate new tab
                 e.target.classList.add('active');
-                contentArea.querySelector('.hire-tab-pane.active').classList.remove('active');
-                const targetTab = contentArea.querySelector(`#${tabName === 'postings' ? 'job-postings' : 'all-applications'}`);
-                targetTab.classList.add('active');
+
+                // Determine and activate new pane
+                const paneIdMap = {
+                    'postings': 'job-postings',
+                    'applications': 'all-applications',
+                    'applicants': 'all-applicants'
+                };
+                const targetPaneId = paneIdMap[tabName];
+                if (targetPaneId) {
+                    const targetTab = contentArea.querySelector(`#${targetPaneId}`);
+                    if (targetTab) {
+                        targetTab.classList.add('active');
+                    }
+                }
 
                 // Load appropriate content
                 if (tabName === 'postings') {
@@ -883,6 +929,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (tabName === 'applications') {
                     loadAllApplications();
                     populateJobFilterDropdown();
+                } else if (tabName === 'applicants') {
+                    loadAllApplicants();
                 }
             }
         });
@@ -907,8 +955,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Set up event listeners for dynamic content
-//        setupJobEventListeners();
 
         // Set up filters
         const searchBtn = contentArea.querySelector('#search-jobs-btn');
@@ -937,313 +983,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial load
         loadJobSeekerContent();
     }
-
-
-        // Setup application event listeners
-//    function setupApplicationEventListeners() {
-//        // Status change listeners
-//        contentArea.addEventListener('change', async (e) => {
-//            if (e.target.classList.contains('status-selector') && e.target.dataset.applicationId) {
-//                const applicationId = e.target.dataset.applicationId;
-//                const newStatus = e.target.value;
-//                await updateApplicationStatus(applicationId, newStatus);
-//            }
-//        });
-//
-//        // Checkbox listeners for bulk actions
-//        contentArea.addEventListener('change', (e) => {
-//            if (e.target.classList.contains('application-checkbox')) {
-//                const applicationId = e.target.dataset.applicationId;
-//                const jobId = e.target.closest('.application-card').dataset.jobId;
-//
-//                if (e.target.checked) {
-//                    selectedApplications.add(applicationId);
-//                } else {
-//                    selectedApplications.delete(applicationId);
-//                }
-//
-//                updateBulkActionsVisibility(jobId);
-//            }
-//        });
-//
-//        // Bulk action buttons
-//        contentArea.addEventListener('click', async (e) => {
-//            if (e.target.classList.contains('apply-bulk-btn')) {
-//                const jobId = e.target.dataset.jobId;
-//                const statusSelect = document.getElementById(`bulk-status-${jobId}`);
-//                const newStatus = statusSelect.value;
-//
-//                if (!newStatus) {
-//                    alert('Please select a status');
-//                    return;
-//                }
-//
-//                await applyBulkStatusUpdate(Array.from(selectedApplications), newStatus);
-//                selectedApplications.clear();
-//                updateBulkActionsVisibility(jobId);
-//            }
-//
-//            if (e.target.classList.contains('cancel-bulk-btn')) {
-//                const jobId = e.target.dataset.jobId;
-//                selectedApplications.clear();
-//                updateBulkActionsVisibility(jobId);
-//                // Uncheck all checkboxes
-//                contentArea.querySelectorAll('.application-checkbox').forEach(cb => cb.checked = false);
-//            }
-//
-//            if (e.target.classList.contains('view-profile-btn')) {
-//                const applicantId = e.target.dataset.applicantId;
-//                await showCandidateProfile(applicantId);
-//            }
-//        });
-//
-//        // Application filter listeners
-//        contentArea.addEventListener('change', (e) => {
-//            if (e.target.classList.contains('applications-filter')) {
-//                const filterValue = e.target.value;
-//                const applicationCards = e.target.closest('.job-applications-section').querySelectorAll('.application-card');
-//
-//                applicationCards.forEach(card => {
-//                    const status = card.querySelector('.application-status').textContent.toLowerCase().replace(' ', '_');
-//                    if (!filterValue || status.includes(filterValue)) {
-//                        card.style.display = 'block';
-//                    } else {
-//                        card.style.display = 'none';
-//                    }
-//                });
-//            }
-//        });
-//    }
-
-
-    // Update bulk actions visibility
-//    function updateBulkActionsVisibility(jobId) {
-//        const bulkActions = document.getElementById(`bulk-actions-${jobId}`);
-//        if (bulkActions) {
-//            if (selectedApplications.size > 0) {
-//                bulkActions.classList.remove('hidden');
-//            } else {
-//                bulkActions.classList.add('hidden');
-//            }
-//        }
-//    }
-
-    // Update the status change event listener in setupApplicationEventListeners
-//    async function updateApplicationStatus(applicationId, newStatus) {
-//        try {
-//            const response = await fetch(`/api/applications/${applicationId}/status`, {
-//                method: 'PATCH',
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify({ status: newStatus })
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to update status');
-//
-//            // Update the UI immediately
-//            const applicationCard = document.querySelector(`[data-application-id="${applicationId}"]`);
-//            if (applicationCard) {
-//                const statusBadge = applicationCard.querySelector('.application-status');
-//                if (statusBadge) {
-//                    // Remove old status class
-//                    statusBadge.className = statusBadge.className.replace(/status-\w+/, '');
-//                    // Add new status class
-//                    statusBadge.classList.add(`status-${newStatus}`);
-//                    statusBadge.textContent = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-//                }
-//            }
-//
-//            showNotification('Application status updated successfully', 'success');
-//
-//        } catch (error) {
-//            console.error('Error updating application status:', error);
-//            showNotification('Failed to update application status', 'error');
-//        }
-//    }
-
-    // Apply bulk status update
-//    async function applyBulkStatusUpdate(applicationIds, newStatus) {
-//        try {
-//            const response = await fetch('/api/applications/bulk-update', {
-//                method: 'POST',
-//                headers: {
-//                    'Content-Type': 'application/json'
-//                },
-//                body: JSON.stringify({
-//                    application_ids: applicationIds,
-//                    status: newStatus
-//                })
-//            });
-//
-//            if (!response.ok) throw new Error('Failed to update applications');
-//
-//            const result = await response.json();
-//            showNotification(`Successfully updated ${result.updated_count} applications`, 'success');
-//
-//            // Refresh the applications list
-//            loadAllApplications();
-//
-//        } catch (error) {
-//            console.error('Error bulk updating applications:', error);
-//            showNotification('Failed to update applications', 'error');
-//        }
-//    }
-
-
-    // Show candidate profile modal
-//    async function showCandidateProfile(applicantId) {
-//        try {
-//            const response = await fetch(`/api/profile/${applicantId}/public`);
-//            if (!response.ok) throw new Error('Failed to load profile');
-//
-//            const profile = await response.json();
-//
-//            const modal = document.createElement('div');
-//            modal.className = 'modal-overlay visible';
-//            modal.innerHTML = `
-//                <div class="modal-content large-modal">
-//                    <button class="modal-close-btn">&times;</button>
-//                    <h2>${profile.first_name} ${profile.last_name}'s Profile</h2>
-//                    <div class="candidate-profile-content">
-//                        <div class="profile-section">
-//                            <h3>Basic Information</h3>
-//                            <p><strong>Email:</strong> ${profile.email}</p>
-//                            <p><strong>Location:</strong> ${profile.city}, ${profile.country}</p>
-//                            <p><strong>Bio:</strong> ${profile.bio || 'No bio provided'}</p>
-//                        </div>
-//
-//                        ${profile.skills && profile.skills.length > 0 ? `
-//                            <div class="profile-section">
-//                                <h3>Skills (${profile.skills.length})</h3>
-//                                ${profile.skills.map(skill => `
-//                                    <div class="profile-item">
-//                                        <div class="item-details">
-//                                            <h4>${skill.title}</h4>
-//                                            <p>Type: ${skill.type}</p>
-//                                            <p>Status: ${skill.status}</p>
-//                                        </div>
-//                                    </div>
-//                                `).join('')}
-//                            </div>
-//                        ` : ''}
-//
-//                        ${profile.experiences && profile.experiences.length > 0 ? `
-//                            <div class="profile-section">
-//                                <h3>Experience (${profile.experiences.length})</h3>
-//                                ${profile.experiences.map(exp => `
-//                                    <div class="profile-item">
-//                                        <div class="item-details">
-//                                            <h4>${exp.position_title}</h4>
-//                                            <p>${exp.employer} • ${exp.city}, ${exp.country}</p>
-//                                            <p>${exp.start_date} - ${exp.is_present ? 'Present' : exp.end_date}</p>
-//                                        </div>
-//                                    </div>
-//                                `).join('')}
-//                            </div>
-//                        ` : ''}
-//
-//                        ${profile.certificates && profile.certificates.length > 0 ? `
-//                            <div class="profile-section">
-//                                <h3>Certificates (${profile.certificates.length})</h3>
-//                                ${profile.certificates.map(cert => `
-//                                    <div class="profile-item">
-//                                        <div class="item-details">
-//                                            <h4>${cert.title}</h4>
-//                                            <p>Issued by: ${cert.issuer}</p>
-//                                            <p>Issue Date: ${cert.issue_date}</p>
-//                                        </div>
-//                                    </div>
-//                                `).join('')}
-//                            </div>
-//                        ` : ''}
-//
-//                        ${profile.degrees && profile.degrees.length > 0 ? `
-//                            <div class="profile-section">
-//                                <h3>Education (${profile.degrees.length})</h3>
-//                                ${profile.degrees.map(degree => `
-//                                    <div class="profile-item">
-//                                        <div class="item-details">
-//                                            <h4>${degree.degree} in ${degree.field_of_study}</h4>
-//                                            <p>${degree.school} • ${degree.city}, ${degree.country}</p>
-//                                            <p>${degree.start_date} - ${degree.end_date}</p>
-//                                        </div>
-//                                    </div>
-//                                `).join('')}
-//                            </div>
-//                        ` : ''}
-//                    </div>
-//                </div>
-//            `;
-//
-//            document.body.appendChild(modal);
-//
-//            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
-//                document.body.removeChild(modal);
-//            });
-//
-//            modal.addEventListener('click', (e) => {
-//                if (e.target === modal) {
-//                    document.body.removeChild(modal);
-//                }
-//            });
-//
-//        } catch (error) {
-//            console.error('Error loading candidate profile:', error);
-//            showNotification('Failed to load candidate profile', 'error');
-//        }
-//    }
-
-
-    // Utility function for notifications
-//    function showNotification(message, type = 'info') {
-//        // Create a simple notification system
-//        const notification = document.createElement('div');
-//        notification.className = `notification notification-${type}`;
-//        notification.style.cssText = `
-//            position: fixed;
-//            top: 20px;
-//            right: 20px;
-//            padding: 1rem;
-//            background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
-//            color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
-//            border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
-//            border-radius: 8px;
-//            z-index: 10000;
-//            max-width: 300px;
-//            opacity: 0;
-//            transition: opacity 0.3s ease;
-//        `;
-//        notification.textContent = message;
-//
-//        document.body.appendChild(notification);
-//
-//        // Fade in
-//        setTimeout(() => {
-//            notification.style.opacity = '1';
-//        }, 10);
-//
-//        // Remove after 5 seconds
-//        setTimeout(() => {
-//            notification.style.opacity = '0';
-//            setTimeout(() => {
-//                if (notification.parentNode) {
-//                    document.body.removeChild(notification);
-//                }
-//            }, 300);
-//        }, 5000);
-//    }
-
-
-//    function setupJobEventListeners() {
-//        // Use event delegation for dynamically added elements
-//        contentArea.addEventListener('click', (e) => {
-//            if (e.target.classList.contains('view-applications-btn')) {
-//                const jobId = e.target.dataset.jobId;
-//                openApplicationsWindow(jobId);
-//            }
-//        });
-//    }
 
 
     // Load all applications for employer
@@ -1357,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="application-actions">
+                         <button class="btn btn-secondary view-profile-btn" data-applicant-id="${application.applicant_id}" data-job-id="${application.job_id}">View Profile</button>
                         <select class="status-selector" data-application-id="${application.application_id}">
                             ${statusOptions}
                         </select>
@@ -1364,6 +1104,137 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
+    }
+
+    // Load all unique applicants for the employer
+    async function loadAllApplicants() {
+        const applicantsList = document.getElementById('employer-applicants-list');
+        if (!applicantsList) return;
+        applicantsList.innerHTML = '<p class="loading">Loading applicants...</p>';
+
+        try {
+            const response = await fetch('/api/applicants');
+            if (!response.ok) throw new Error('Failed to fetch applicants');
+            const applicants = await response.json();
+
+            if (applicants.length === 0) {
+                applicantsList.innerHTML = '<div class="empty-list-msg">No applicants found yet.</div>';
+            } else {
+                applicantsList.innerHTML = applicants.map(createApplicantCardHTML).join('');
+            }
+        } catch (error) {
+            console.error('Error loading applicants:', error);
+            applicantsList.innerHTML = '<div class="error-msg">Could not load applicants.</div>';
+        }
+    }
+
+
+    // Create HTML for an applicant card in the "All Applicants" tab
+    function createApplicantCardHTML(applicant) {
+        return `
+            <div class="applicant-card" data-applicant-id="${applicant.applicant_id}">
+                <div class="applicant-info">
+                    <h4>${applicant.applicant_name}</h4>
+                    <p>Last applied for: <strong>${applicant.job_title}</strong></p>
+                </div>
+                <div class="applicant-actions">
+                    <button class="btn btn-primary view-profile-btn" data-applicant-id="${applicant.applicant_id}" data-job-id="${applicant.job_id}">View Profile</button>
+                </div>
+            </div>
+        `;
+    }
+
+
+    // Show a modal with the applicant's full public profile
+    async function showApplicantProfileModal(applicantId) {
+        const modalId = 'candidate-profile-modal';
+        // This is a bit of a workaround because the event might be delegated.
+        // We find the button that was clicked to get the job_id.
+        const button = event.target.closest('.view-profile-btn');
+        const jobId = button ? button.dataset.jobId : null;
+
+        // Remove any existing modal first
+        const existingModal = document.getElementById(modalId);
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create and show a loading state modal immediately
+        let modal = document.createElement('div');
+        modal.className = 'modal-overlay visible';
+        modal.id = modalId;
+        modal.innerHTML = `
+            <div class="modal-content large-modal candidate-profile-modal">
+                <button class="modal-close-btn">&times;</button>
+                <div class="loading-state" style="padding: 4rem; text-align: center;">
+                    <p class="loading">Loading applicant profile...</p>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+
+        try {
+            const url = jobId ? `/api/profile/${applicantId}/public?job_id=${jobId}` : `/api/profile/${applicantId}/public`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to load profile.');
+            const profile = await response.json();
+
+            const location = [profile.city, profile.country].filter(Boolean).join(', ') || 'Not provided';
+
+            // --- HTML Sections ---
+            const bioHtml = `<p>${profile.bio || 'No bio provided.'}</p>`;
+
+            const coverLetterHtml = profile.cover_letter
+                ? `<p>${profile.cover_letter.replace(/\n/g, '<br>')}</p>`
+                : '<p class="empty-list-msg">No cover letter was submitted for this application.</p>';
+
+            const skillsHtml = profile.skills.length > 0
+                ? profile.skills.map(skill => createSkillHTML(skill, true)).join('')
+                : '<p class="empty-list-msg">No public skills listed.</p>';
+
+            const experiencesHtml = profile.experiences.length > 0
+                ? profile.experiences.map(exp => createExperienceHTML(exp, true)).join('')
+                : '<p class="empty-list-msg">No public experience listed.</p>';
+
+            const certificatesHtml = profile.certificates.length > 0
+                ? profile.certificates.map(cert => createCertificateHTML(cert, true)).join('')
+                : '<p class="empty-list-msg">No public certificates listed.</p>';
+
+            const degreesHtml = profile.degrees.length > 0
+                ? profile.degrees.map(degree => createDegreeHTML(degree, true)).join('')
+                : '<p class="empty-list-msg">No public degrees listed.</p>';
+
+
+            modal.innerHTML = `
+                <div class="modal-content large-modal candidate-profile-modal">
+                    <button class="modal-close-btn">&times;</button>
+                    <div class="profile-modal-header">
+                        <h2>${profile.first_name || ''} ${profile.last_name || ''}</h2>
+                        <p>${profile.email} &middot; ${location}</p>
+                    </div>
+                    <div class="candidate-profile-content">
+                        <div class="profile-modal-section"><h3>Bio</h3>${bioHtml}</div>
+                        ${profile.job_title ? `<div class="profile-modal-section"><h3>Cover Letter for ${profile.job_title}</h3>${coverLetterHtml}</div>` : ''}
+                        <div class="profile-modal-section"><h3>Skills</h3>${skillsHtml}</div>
+                        <div class="profile-modal-section"><h3>Experience</h3>${experiencesHtml}</div>
+                        <div class="profile-modal-section"><h3>Certificates</h3>${certificatesHtml}</div>
+                        <div class="profile-modal-section"><h3>Degrees</h3>${degreesHtml}</div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error showing applicant profile modal:', error);
+            modal.innerHTML = `
+                 <div class="modal-content">
+                     <button class="modal-close-btn">&times;</button>
+                     <div class="error-msg" style="padding: 2rem;">Could not load applicant profile. Please try again.</div>
+                 </div>`;
+        }
+
+        // Add close event listeners to the final modal
+        modal.querySelector('.modal-close-btn').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', e => {
+            if (e.target === modal) modal.remove();
+        });
     }
 
 
@@ -2166,6 +2037,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // New handler for the "View Profile" button
+        if (event.target.closest('.view-profile-btn')) {
+            const applicantId = event.target.closest('.view-profile-btn').dataset.applicantId;
+            if (applicantId) {
+                showApplicantProfileModal(applicantId);
+                return; // Stop further event processing
+            }
+        }
+
         const viewApplicationsBtn = event.target.closest('.view-applications-btn');
         if (viewApplicationsBtn) {
             const jobId = viewApplicationsBtn.dataset.jobId;
@@ -2505,6 +2385,16 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         document.body.appendChild(modal);
+
+        // Add event listener for the modal's own "Apply Now" button
+        const applyBtnInModal = modal.querySelector('.apply-job-btn');
+        if (applyBtnInModal) {
+            applyBtnInModal.addEventListener('click', () => {
+                const jobId = parseInt(applyBtnInModal.dataset.jobId);
+                modal.remove(); // Close the current modal
+                openApplicationModal(jobId); // Open the application modal
+            });
+        }
 
         // Close modal events
         const closeBtn = modal.querySelector('.modal-close-btn');

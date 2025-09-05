@@ -1926,3 +1926,80 @@ h4 {
     flex-grow: 2;
 }
 
+/* --- Applicant Card Styles --- */
+.applicant-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.applicant-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.applicant-info h4 {
+    margin: 0 0 0.25rem;
+    color: var(--dark-color);
+}
+
+.applicant-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* --- Candidate Profile Modal --- */
+.candidate-profile-modal .modal-content {
+    max-width: 900px;
+    max-height: 90vh;
+}
+
+.candidate-profile-content {
+    max-height: calc(90vh - 150px); /* Adjust based on header/footer height */
+    overflow-y: auto;
+    padding: 0 1rem; /* Add some padding for the scrollbar */
+    margin: 0 -1rem;
+}
+
+.profile-modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.profile-modal-header h2 {
+    margin-bottom: 0.25rem;
+}
+
+.profile-modal-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.profile-modal-section {
+    margin-bottom: 2rem;
+}
+
+.profile-modal-section h3 {
+    color: var(--dark-color);
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.profile-modal-section .profile-item {
+    border-left: 3px solid var(--primary-color);
+}
+
+.profile-modal-section .item-details p.item-meta {
+    font-size: 0.9rem;
+}
+

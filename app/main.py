@@ -307,6 +307,7 @@ class JobApplication(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    cover_letter = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), default='Submitted', nullable=False)  # e.g., Submitted, Under Review, etc.
     applied_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
@@ -320,6 +321,7 @@ class JobApplication(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'job_id': self.job_id,
+            'cover_letter': self.cover_letter,
             'status': self.status,
             'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S')
         }
@@ -1306,6 +1308,8 @@ def apply_to_job(job_id):
     print("Executing apply_to_job(job_id) on app.")
     """Handles a user's application to a specific job."""
     job = JobPosting.query.get_or_404(job_id)
+    data = request.get_json()
+    cover_letter = data.get('cover_letter')
 
     # Prevent the employer from applying to their own job
     if job.posted_by == current_user.id:
@@ -1317,7 +1321,12 @@ def apply_to_job(job_id):
         return jsonify({'error': 'You have already applied to this job.'}), 409
 
     # Create the new application record
-    new_application = JobApplication(user_id=current_user.id, job_id=job_id, status='Submitted')
+    new_application = JobApplication(
+        user_id=current_user.id,
+        job_id=job_id,
+        status='Submitted',
+        cover_letter=cover_letter
+    )
     db.session.add(new_application)
 
     # Create a notification for the employer
@@ -1361,6 +1370,8 @@ def get_received_applications():
         JobApplication.status,
         JobApplication.applied_at,
         JobPosting.title,
+        JobPosting.id.label('job_id'),
+        User.id.label('applicant_id'),
         User.first_name,
         User.last_name,
         User.email
@@ -1386,6 +1397,8 @@ def get_received_applications():
         {
             'application_id': app.id,
             'job_title': app.title,
+            'job_id': app.job_id,
+            'applicant_id': app.applicant_id,
             'applicant_name': f"{app.first_name or ''} {app.last_name or ''}".strip(),
             'applicant_email': app.email,
             'status': app.status,
@@ -1395,6 +1408,88 @@ def get_received_applications():
     ]
 
     return jsonify(all_applications)
+
+
+@app.route('/api/applicants', methods=['GET'])
+@login_required
+def get_applicants():
+    """
+    API endpoint for an employer to get a unique list of all applicants
+    who have applied to their job postings.
+    """
+    # Get all applications for jobs posted by the current user
+    applications = JobApplication.query.join(JobPosting).filter(JobPosting.posted_by == current_user.id).order_by(JobApplication.applied_at.desc()).all()
+
+    # Use a dictionary to ensure each applicant appears only once,
+    # showing details from their most recent application.
+    applicants_dict = {}
+    for app in applications:
+        if app.user_id not in applicants_dict:
+            applicants_dict[app.user_id] = {
+                'applicant_id': app.user_id,
+                'applicant_name': f"{app.applicant.first_name or ''} {app.applicant.last_name or ''}".strip(),
+                'job_id': app.job_id,
+                'job_title': app.job.title,  # Store the title of the job from the most recent application
+                'applied_at': app.applied_at
+            }
+
+    final_list = sorted(applicants_dict.values(), key=lambda x: x['applied_at'], reverse=True)
+    # Remove the temporary 'applied_at' key before sending the response
+    for item in final_list:
+        del item['applied_at']
+
+    return jsonify(final_list)
+
+
+@app.route('/api/profile/<int:applicant_id>/public', methods=['GET'])
+@login_required
+def get_public_profile(applicant_id):
+    """
+    API endpoint for an employer to view the detailed profile of an applicant.
+    """
+    # --- Security Check ---
+    # An employer can only view the profile if the applicant has applied to one of their jobs.
+    job_ids = [job.id for job in JobPosting.query.filter_by(posted_by=current_user.id).with_entities(JobPosting.id)]
+    if not job_ids:
+        return jsonify({"error": "You have no job postings."}), 403
+
+    job_id = request.args.get('job_id', type=int)
+
+    application_query = JobApplication.query.filter(
+        JobApplication.user_id == applicant_id,
+        JobApplication.job_id.in_(job_ids)
+    )
+
+    # If a specific job_id is provided, find that specific application
+    if job_id:
+        application = application_query.filter_by(job_id=job_id).first()
+    else:
+        # Otherwise, just verify that at least one application exists
+        application = application_query.first()
+
+    if not application:
+        return jsonify({"error": "Unauthorized to view this profile or application not found"}), 403
+
+    # --- Fetch Profile Data ---
+    applicant = User.query.get_or_404(applicant_id)
+
+    # Fetch public-facing profile items.
+    # Note: The .to_dict() methods on these models already handle the conversion to JSON-friendly formats.
+    skills = [s.to_dict() for s in Skill.query.filter_by(user_id=applicant_id, is_public=True).all()]
+    experiences = [e.to_dict() for e in Experience.query.filter_by(user_id=applicant_id, is_public=True).order_by(Experience.start_date.desc()).all()]
+    certificates = [c.to_dict() for c in Certificate.query.filter_by(user_id=applicant_id, is_public=True).order_by(Certificate.issue_date.desc()).all()]
+    degrees = [d.to_dict() for d in Degree.query.filter_by(user_id=applicant_id, is_public=True).order_by(Degree.end_date.desc()).all()]
+
+    # Combine all data into a single profile object
+    profile_data = applicant.to_dict()
+    profile_data['skills'] = skills
+    profile_data['experiences'] = experiences
+    profile_data['certificates'] = certificates
+    profile_data['degrees'] = degrees
+    profile_data['cover_letter'] = application.cover_letter if application else None
+    profile_data['job_title'] = application.job.title if application else None
+
+    return jsonify(profile_data)
 
 
 @app.route('/api/applications/<int:application_id>/status', methods=['PUT'])
