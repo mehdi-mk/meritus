@@ -25,6 +25,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelector('.sidebar nav').addEventListener('click', (event) => {
         if (event.target.tagName === 'A') {
+            // Remove .active class from the currently active link
+            const currentActive = document.querySelector('.sidebar nav a.active');
+            if (currentActive) {
+                currentActive.classList.remove('active');
+            }
+            // Add .active class to the clicked link
+            event.target.classList.add('active');
+
             const contentName = event.target.dataset.content;
             if (contentLoaders[contentName]) {
                 contentLoaders[contentName]();
@@ -132,8 +140,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    function loadHomeContent() {
-        contentArea.innerHTML = '<h1>Home</h1>';
+    async function loadHomeContent() {
+        try {
+            const response = await fetch('/api/account');
+            if (!response.ok) throw new Error('Failed to fetch account details');
+            const account = await response.json();
+            // Use the first name if available, otherwise default to the email username
+            const name = account.first_name || account.email.split('@')[0];
+            contentArea.innerHTML = `<h1>Hello, ${name}!</h1>`;
+        } catch (error) {
+            console.error('Error loading home content:', error);
+            contentArea.innerHTML = '<h1>Welcome!</h1><p>Welcome to your Meritus dashboard. Select an option from the sidebar to get started.</p>';
+        }
     }
 
 
@@ -835,7 +853,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             <div id="hire" class="tab-pane">
-                <h2>Hire</h2>
                 <div class="hire-section">
                     <div class="hire-actions">
                         <button class="btn btn-primary" id="post-job-btn">Post New Job</button>
@@ -846,17 +863,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="hire-tab-button active" data-hire-tab="postings">Job Postings</button>
                         <button class="hire-tab-button" data-hire-tab="applications">All Applications</button>
                         <button class="hire-tab-button" data-hire-tab="applicants">All Applicants</button>
+                        <button class="hire-tab-button" data-hire-tab="archived">Archived Applications</button>
                     </div>
 
                     <div id="job-postings" class="hire-tab-pane active">
-                        <h3>Your Job Postings</h3>
                         <div id="employer-jobs-list">
                             <p class="loading">Loading your job postings...</p>
                         </div>
                     </div>
 
                     <div id="all-applications" class="hire-tab-pane">
-                        <h3>All Applications</h3>
                         <div id="applications-filter-container"></div>
                         <div id="employer-applications-filter-status"></div>
                         <div id="employer-applications-list">
@@ -865,9 +881,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
 
                     <div id="all-applicants" class="hire-tab-pane">
-                        <h3>All Applicants</h3>
                         <div id="employer-applicants-list">
                             <p class="loading">Loading applicants...</p>
+                        </div>
+                    </div>
+
+                    <div id="all-archived" class="hire-tab-pane">
+                        <h3>Archived Applications</h3>
+                        <div id="employer-archived-applications-list">
+                            <p class="loading">Loading archived applications...</p>
                         </div>
                     </div>
                 </div>
@@ -913,7 +935,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const paneIdMap = {
                     'postings': 'job-postings',
                     'applications': 'all-applications',
-                    'applicants': 'all-applicants'
+                    'applicants': 'all-applicants',
+                    'archived': 'all-archived'
                 };
                 const targetPaneId = paneIdMap[tabName];
                 if (targetPaneId) {
@@ -931,6 +954,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     populateJobFilterDropdown();
                 } else if (tabName === 'applicants') {
                     loadAllApplicants();
+                } else if (tabName === 'archived') {
+                    loadArchivedApplications();
                 }
             }
         });
@@ -1026,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      applicationsContent.innerHTML = '<div class="empty-list-msg">No applications received yet.</div>';
                 }
             } else {
-                applicationsContent.innerHTML = applications.map(createApplicationCardHTML).join('');
+                applicationsContent.innerHTML = applications.map(app => createApplicationCardHTML(app, false)).join('');
             }
         } catch (error) {
             console.error('Error loading applications:', error);
@@ -1069,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    function createApplicationCardHTML(application) {
+    function createApplicationCardHTML(application, isArchivedView = false) {
         const appliedDate = new Date(application.applied_at).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -1083,6 +1108,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // This converts "Under Review" to "under-review" for use as a CSS class
         const statusClass = application.status.toLowerCase().replace(/ /g, '-');
+
+        const archiveButton = isArchivedView
+            ? `<button class="btn btn-secondary unarchive-app-btn" data-application-id="${application.application_id}">Unarchive</button>`
+            : `<button class="btn btn-warning archive-app-btn" data-application-id="${application.application_id}">Archive</button>`;
 
         return `
             <div class="application-card status-border-${statusClass}" data-application-id="${application.application_id}">
@@ -1100,6 +1129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <select class="status-selector" data-application-id="${application.application_id}">
                             ${statusOptions}
                         </select>
+                        ${archiveButton}
                     </div>
                 </div>
             </div>
@@ -1125,6 +1155,53 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error loading applicants:', error);
             applicantsList.innerHTML = '<div class="error-msg">Could not load applicants.</div>';
+        }
+    }
+
+
+    async function loadArchivedApplications() {
+        const archivedList = document.getElementById('employer-archived-applications-list');
+        if (!archivedList) return;
+        archivedList.innerHTML = '<p class="loading">Loading archived applications...</p>';
+
+        try {
+            const response = await fetch('/api/applications?show_archived=true');
+            if (!response.ok) throw new Error('Failed to fetch archived applications');
+
+            const applications = await response.json();
+
+            if (applications.length === 0) {
+                archivedList.innerHTML = '<div class="empty-list-msg">You have no archived applications.</div>';
+            } else {
+                archivedList.innerHTML = applications.map(app => createApplicationCardHTML(app, true)).join('');
+            }
+        } catch (error) {
+            console.error('Error loading archived applications:', error);
+            archivedList.innerHTML = '<div class="error-msg">Could not load archived applications.</div>';
+        }
+    }
+
+
+    async function archiveApplication(applicationId, archive = true) {
+        try {
+            const response = await fetch(`/api/applications/${applicationId}/archive`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_archived: archive })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update application');
+            }
+
+            // Refresh both lists to ensure data consistency
+            loadAllApplications();
+            loadArchivedApplications();
+
+        } catch (error) {
+            console.error('Error archiving/unarchiving application:', error);
+            alert(error.message);
         }
     }
 
@@ -2044,6 +2121,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 showApplicantProfileModal(applicantId);
                 return; // Stop further event processing
             }
+        }
+
+        const archiveBtn = event.target.closest('.archive-app-btn');
+        if (archiveBtn) {
+            const applicationId = archiveBtn.dataset.applicationId;
+            archiveApplication(applicationId, true);
+            return;
+        }
+
+        const unarchiveBtn = event.target.closest('.unarchive-app-btn');
+        if (unarchiveBtn) {
+            const applicationId = unarchiveBtn.dataset.applicationId;
+            archiveApplication(applicationId, false);
+            return;
         }
 
         const viewApplicationsBtn = event.target.closest('.view-applications-btn');

@@ -310,6 +310,7 @@ class JobApplication(db.Model):
     cover_letter = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), default='Submitted', nullable=False)  # e.g., Submitted, Under Review, etc.
     applied_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    is_archived = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
 
     # Relationships to easily access applicant and job details
     applicant = db.relationship('User', back_populates='applications')
@@ -323,7 +324,8 @@ class JobApplication(db.Model):
             'job_id': self.job_id,
             'cover_letter': self.cover_letter,
             'status': self.status,
-            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S')
+            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_archived': self.is_archived
         }
 
 
@@ -1056,7 +1058,7 @@ def browse_jobs():
 
         # 2. START WITH A BASE QUERY for active jobs not posted by the current user.
         query = JobPosting.query.filter(
-            JobPosting.status.notin_(['Draft', 'Archived']),
+            JobPosting.status == 'active',
             JobPosting.posted_by != current_user.id
         )
 
@@ -1364,6 +1366,7 @@ def get_received_applications():
     """
     job_id_filter = request.args.get('job_id')
     job_ids_filter = request.args.get('job_ids')
+    show_archived = request.args.get('show_archived') == 'true'
 
     query = db.session.query(
         JobApplication.id,
@@ -1378,6 +1381,11 @@ def get_received_applications():
     ).join(JobPosting, JobApplication.job_id == JobPosting.id)\
      .join(User, JobApplication.user_id == User.id)\
      .filter(JobPosting.posted_by == current_user.id)
+
+    if show_archived:
+        query = query.filter(JobApplication.is_archived == True)
+    else:
+        query = query.filter(JobApplication.is_archived == False)
 
     if job_id_filter:
         query = query.filter(JobPosting.id == job_id_filter)
@@ -1408,6 +1416,30 @@ def get_received_applications():
     ]
 
     return jsonify(all_applications)
+
+
+@app.route('/api/applications/<int:application_id>/archive', methods=['PUT'])
+@login_required
+def archive_application(application_id):
+    """
+    Archives or un-archives a specific job application.
+    Accessible only by the user who posted the job.
+    """
+    application = JobApplication.query.get_or_404(application_id)
+    job = JobPosting.query.get_or_404(application.job_id)
+
+    # Authorization: Ensure the current user is the one who posted the job
+    if job.posted_by != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    is_archived = data.get('is_archived', True)
+
+    application.is_archived = is_archived
+    db.session.commit()
+
+    action = "archived" if is_archived else "unarchived"
+    return jsonify({"message": f"Application successfully {action}"})
 
 
 @app.route('/api/applicants', methods=['GET'])

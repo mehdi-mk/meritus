@@ -14,7 +14,7 @@
                 <h2>Dashboard</h2>
                 <nav>
                     <ul>
-                        <li><a href="#" data-content="Home">Home</a></li>
+                        <li><a href="#" data-content="Home" class="active">Home</a></li>
                         <li><a href="#" data-content="Learning">Learning</a></li>
                         <li><a href="#" data-content="Job">Job</a></li>
                         <li><a href="#" data-content="Profile">Profile</a></li>
@@ -28,9 +28,6 @@
             </div>
         </div>
         <div class="main-content">
-            <header>
-                <h1>Welcome, {{ current_user.email.split('@')[0] }}!</h1>
-            </header>
             <section id="content-area">
                 <h1>Home</h1>
             </section>
