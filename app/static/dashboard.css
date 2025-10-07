@@ -2012,3 +2012,77 @@ h4 {
     font-size: 0.9rem;
 }
 
+/* --- Dynamic Input Lists for Forms --- */
+.dynamic-input-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.dynamic-input-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dynamic-input-item input {
+    flex-grow: 1;
+}
+
+.btn-add-dynamic {
+    background: none;
+    border: 1px dashed var(--border-color);
+    color: var(--primary-color);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.btn-add-dynamic:hover {
+    background: var(--primary-color);
+    color: var(--white);
+    border-style: solid;
+}
+
+.btn-remove-dynamic {
+    background: var(--danger-color);
+    color: var(--white);
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* --- Experience Details Display --- */
+.experience-details-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.experience-details-section h5 {
+    margin: 0 0 0.5rem;
+    color: var(--dark-color);
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.experience-details-section ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
