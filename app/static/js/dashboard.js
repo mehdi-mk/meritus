@@ -504,12 +504,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
         const location = [exp.city, exp.country].filter(Boolean).join(', ');
 
-         const responsibilitiesHTML = exp.responsibilities && exp.responsibilities.length > 0 ? `
+        const responsibilitiesHTML = exp.responsibilities && exp.responsibilities.length > 0 ? `
             <div class="experience-details-section">
                 <h5>Responsibilities</h5>
                 <ol>${exp.responsibilities.map(r => `<li>${r}</li>`).join('')}</ol>
             </div>
-        ` : '';
+        ` : ''; // This was correct, but the display logic was missing from the return statement.
 
         const achievementsHTML = exp.achievements && exp.achievements.length > 0 ? `
             <div class="experience-details-section">
@@ -541,6 +541,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${location}</p>
                     <p class="item-meta">${dateRange}</p>
                     <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
+                    ${responsibilitiesHTML}
+                    ${achievementsHTML}
                 </div>
                 ${actionsHTML}
             </div>`;
