@@ -504,20 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
         const location = [exp.city, exp.country].filter(Boolean).join(', ');
 
-        const responsibilitiesHTML = exp.responsibilities && exp.responsibilities.length > 0 ? `
-            <div class="experience-details-section">
-                <h5>Responsibilities</h5>
-                <ol>${exp.responsibilities.map(r => `<li>${r}</li>`).join('')}</ol>
-            </div>
-        ` : ''; // This was correct, but the display logic was missing from the return statement.
-
-        const achievementsHTML = exp.achievements && exp.achievements.length > 0 ? `
-            <div class="experience-details-section">
-                <h5>Achievements</h5>
-                <ol>${exp.achievements.map(a => `<li>${a}</li>`).join('')}</ol>
-            </div>
-        ` : '';
-
         const actionsHTML = !isPublicView ? `
             <div class="item-actions">
                 <div class="item-action-buttons">
@@ -541,8 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${location}</p>
                     <p class="item-meta">${dateRange}</p>
                     <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
-                    ${responsibilitiesHTML}
-                    ${achievementsHTML}
                 </div>
                 ${actionsHTML}
             </div>`;
@@ -618,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const newItem = document.createElement('div');
         newItem.className = 'dynamic-input-item';
         newItem.innerHTML = `
-            <input type="text" name="${type}" placeholder="Enter a ${type}" value="${value}">
+            <input type="text" name="${type}s" placeholder="Enter a ${type}" value="${value}">
             <button type="button" class="btn-remove-dynamic">&times;</button>
         `;
         listElement.appendChild(newItem);
@@ -637,12 +621,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = modal.querySelector('.modal-form');
             form.reset();
 
-            // Clear dynamic lists for experience modal
-            if (type === 'experience') {
-                modal.querySelector('#responsibilities-list').innerHTML = '';
-                modal.querySelector('#achievements-list').innerHTML = '';
-            }
-
             // Special handling for skill modal
             if (type === 'skill') {
                 await loadProfileItemsForSkillForm();
@@ -657,21 +635,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             for (const key in itemData) {
-                if (Object.prototype.hasOwnProperty.call(itemData, key) && key !== 'acquired_at_sources' && key !== 'responsibilities' && key !== 'achievements') {
+                if (Object.prototype.hasOwnProperty.call(itemData, key) && key !== 'acquired_at_sources') {
                     const input = form.querySelector(`[name="${key}"]`);
                     if (input) {
                         input.type === 'checkbox' ? (input.checked = itemData[key]) : (input.value = itemData[key]);
                     }
-                }
-            }
-
-            // Populate dynamic fields for experience
-            if (type === 'experience') {
-                if (itemData.responsibilities) {
-                    itemData.responsibilities.forEach(text => addDynamicInput('responsibility', 'responsibilities-list', text));
-                }
-                if (itemData.achievements) {
-                    itemData.achievements.forEach(text => addDynamicInput('achievement', 'achievements-list', text));
                 }
             }
 
@@ -756,11 +724,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.id === 'experience-form') data.is_present = formData.has('is_present');
             if (this.id === 'account-settings-form') delete data.email;
 
-            if (this.id === 'experience-form') {
-                data.responsibilities = Array.from(this.querySelectorAll('[name="responsibility"]')).map(input => input.value).filter(Boolean);
-                data.achievements = Array.from(this.querySelectorAll('[name="achievement"]')).map(input => input.value).filter(Boolean);
-            }
-
             const id = data.id;
             const isEdit = id && id !== '';
             let url, method;
@@ -810,26 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const endDateInput = modals.experience.querySelector('#end-date');
             endDateInput.disabled = this.checked;
             if (this.checked) endDateInput.value = '';
-        });
-
-        modals.experience.addEventListener('click', function(event) {
-            const button = event.target.closest('.btn-add-dynamic');
-            if (button) {
-                const listId = button.dataset.list;
-                const type = button.dataset.type;
-                const listElement = document.getElementById(listId);
-
-                if (listElement && listElement.children.length < 20) {
-                    addDynamicInput(type, listId);
-                } else if (listElement) {
-                    alert(`You can add a maximum of 20 ${type}s.`);
-                }
-            }
-
-            const removeBtn = event.target.closest('.btn-remove-dynamic');
-            if (removeBtn) {
-                removeBtn.closest('.dynamic-input-item').remove();
-            }
         });
     }
 

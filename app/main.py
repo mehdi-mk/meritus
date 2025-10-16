@@ -171,8 +171,6 @@ class Experience(db.Model):
     employment_arrangement = db.Column(db.String(50))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_public = db.Column(db.Boolean, nullable=False, default=True)
-    responsibilities = db.Column(db.JSON, nullable=True)
-    achievements = db.Column(db.JSON, nullable=True)
 
     def to_dict(self):
         print("Executing to_dict on class Experience.")
@@ -187,9 +185,7 @@ class Experience(db.Model):
             'is_present': self.is_present,
             'employment_type': self.employment_type,
             'employment_arrangement': self.employment_arrangement,
-            'is_public': self.is_public,
-            'responsibilities': self.responsibilities or [],
-            'achievements': self.achievements or []
+            'is_public': self.is_public
         }
 
 
@@ -729,9 +725,7 @@ def add_experience():
         country=data.get('country'), city=data.get('city'),
         employment_type=data.get('employment_type'),
         employment_arrangement=data.get('employment_arrangement'),
-        is_public=data.get('is_public', True),
-        responsibilities=data.get('responsibilities', []),
-        achievements=data.get('achievements', [])
+        is_public=data.get('is_public', True)
     )
     db.session.add(new_experience)
     db.session.commit()
@@ -771,8 +765,6 @@ def edit_experience(id):
     exp.employment_type = data.get('employment_type')
     exp.employment_arrangement = data.get('employment_arrangement')
     exp.is_public = data.get('is_public', exp.is_public)
-    exp.responsibilities = data.get('responsibilities', exp.responsibilities)
-    exp.achievements = data.get('achievements', exp.achievements)
     db.session.commit()
     return jsonify(exp.to_dict())
 
