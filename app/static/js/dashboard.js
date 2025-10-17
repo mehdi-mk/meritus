@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
         degree: document.getElementById('degree-modal'),
         account: document.getElementById('account-settings-modal'),
         confirm: document.getElementById('confirm-remove-modal')
+        confirm: document.getElementById('confirm-remove-modal'),
+        test: document.getElementById('test-modal')
     };
     let itemToDelete = { id: null, type: null };
 
@@ -504,6 +506,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateRange = exp.is_present ? `${exp.start_date} - Present` : `${exp.start_date} - ${exp.end_date || 'N/A'}`;
         const location = [exp.city, exp.country].filter(Boolean).join(', ');
 
+        const responsibilitiesHTML = exp.responsibilities ? `
+            <div class="experience-details-section">
+                <h5>Responsibilities</h5>
+                <p>${exp.responsibilities.replace(/\n/g, '<br>')}</p>
+            </div>
+        ` : '';
+
+        const achievementsHTML = exp.achievements ? `
+            <div class="experience-details-section">
+                <h5>Achievements</h5>
+                <p>${exp.achievements.replace(/\n/g, '<br>')}</p>
+            </div>
+        ` : '';
+
         const actionsHTML = !isPublicView ? `
             <div class="item-actions">
                 <div class="item-action-buttons">
@@ -527,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="item-meta">${location}</p>
                     <p class="item-meta">${dateRange}</p>
                     <p class="item-meta">${exp.employment_type} &middot; ${exp.employment_arrangement}</p>
+                    ${responsibilitiesHTML}${achievementsHTML}
                 </div>
                 ${actionsHTML}
             </div>`;
@@ -766,6 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupGenericForm(modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
     setupGenericForm(modals.degree, () => fetchAndDisplay('degree', 'degree-list', createDegreeHTML));
     setupGenericForm(modals.account);
+    setupGenericForm(modals.test, () => { /* Will be implemented later */ });
 
     // Handle special UI logic within specific modals
     if (modals.experience) {
@@ -880,6 +898,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="hire-tab-button" data-hire-tab="applications">All Applications</button>
                         <button class="hire-tab-button" data-hire-tab="applicants">All Applicants</button>
                         <button class="hire-tab-button" data-hire-tab="archived">Archived Applications</button>
+                        <button class="hire-tab-button" data-hire-tab="interviews">Interviews</button>
                     </div>
 
                     <div id="job-postings" class="hire-tab-pane active">
@@ -906,6 +925,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h3>Archived Applications</h3>
                         <div id="employer-archived-applications-list">
                             <p class="loading">Loading archived applications...</p>
+                        </div>
+                    </div>
+
+                    <div id="interviews-pane" class="hire-tab-pane">
+                        <!-- Content for the Interviews tab will be added later -->
+                        <p class="empty-list-msg">Questionnaire and exam management is coming soon.</p>
+                        <div class="hire-actions">
+                            <button class="btn btn-primary" id="create-test-btn">Create a Test</button>
+                        </div>
+                        <div id="tests-list">
+                            <p class="empty-list-msg">No questionnaires or exams created yet.</p>
                         </div>
                     </div>
                 </div>
@@ -952,7 +982,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     'postings': 'job-postings',
                     'applications': 'all-applications',
                     'applicants': 'all-applicants',
-                    'archived': 'all-archived'
+                    'archived': 'all-archived',
+                    'interviews': 'interviews-pane'
                 };
                 const targetPaneId = paneIdMap[tabName];
                 if (targetPaneId) {
@@ -972,6 +1003,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadAllApplicants();
                 } else if (tabName === 'archived') {
                     loadArchivedApplications();
+                } else if (tabName === 'interviews') {
+                    // No content to load for now
                 }
             }
         });
@@ -1019,6 +1052,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const postJobBtn = contentArea.querySelector('#post-job-btn');
         if (postJobBtn) {
             postJobBtn.addEventListener('click', () => openJobPostingModal());
+        }
+
+        // Set up create test button
+        const createTestBtn = contentArea.querySelector('#create-test-btn');
+        if (createTestBtn) {
+            createTestBtn.addEventListener('click', () => modals.test.classList.add('visible'));
         }
 
         // Initial load
