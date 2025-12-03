@@ -247,6 +247,7 @@ class Degree(db.Model):
         return {
             'id': self.id,
             'degree': self.degree.value if self.degree else None,
+            'field_of_study': self.field_of_study,
             'school': self.school,
             'country': self.country,
             'city': self.city,
@@ -456,6 +457,68 @@ class Notification(db.Model):
             'link': self.link,
             'created_at': self.created_at.strftime('%b %d, %Y, %I:%M %p')
         }
+
+
+# Class #15
+class Test(db.Model):
+    __tablename__ = 'tests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    test_type = db.Column(db.String(50), nullable=False)  # 'Questionnaire' or 'Exam'
+    title = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    questions = db.relationship('Question', backref='test', lazy=True, cascade="all, delete-orphan")
+    user = db.relationship('User', backref='tests')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'test_type': self.test_type,
+            'title': self.title,
+            'created_at': self.created_at.strftime('%B %d, %Y'),
+            'question_count': len(self.questions)
+        }
+
+    def to_detailed_dict(self):
+        base_dict = self.to_dict()
+        base_dict['questions'] = [q.to_dict() for q in self.questions]
+        return base_dict
+
+
+# Class #16
+class Question(db.Model):
+    __tablename__ = 'questions'
+    id = db.Column(db.Integer, primary_key=True)
+    test_id = db.Column(db.Integer, db.ForeignKey('tests.id'), nullable=False)
+    question_type = db.Column(db.String(50), nullable=False)  # 'multiple-choice' or 'descriptive'
+    question_text = db.Column(db.Text, nullable=False)
+    char_limit = db.Column(db.Integer, nullable=True) # For descriptive questions
+
+    # For multiple-choice questions
+    answers = db.relationship('Answer', backref='question', lazy=True, cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'test_id': self.test_id,
+            'question_type': self.question_type,
+            'question_text': self.question_text,
+            'char_limit': self.char_limit,
+            'answers': [a.to_dict() for a in self.answers]
+        }
+
+
+# Class #17
+class Answer(db.Model):
+    __tablename__ = 'answers'
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    answer_text = db.Column(db.Text, nullable=False)
+
+    def to_dict(self):
+        return {'id': self.id, 'answer_text': self.answer_text}
 
 
 @login_manager.user_loader
@@ -856,6 +919,131 @@ def delete_certificate(id):
     db.session.delete(cert)
     db.session.commit()
     return jsonify({'message': 'Certificate deleted successfully'}), 200
+
+
+# --- API Endpoints for Tests (Questionnaires/Exams) ---
+@app.route('/api/tests', methods=['POST'])
+@login_required
+def create_test():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid data"}), 400
+
+    try:
+        new_test = Test(
+            user_id=current_user.id,
+            test_type=data['test_type'],
+            title=data['title']
+        )
+        db.session.add(new_test)
+        db.session.flush()  # To get the new_test.id
+
+        for q_data in data.get('questions', []):
+            new_question = Question(
+                test_id=new_test.id,
+                question_type=q_data['question_type'],
+                question_text=q_data['question_text'],
+                char_limit=q_data.get('char_limit')
+            )
+            db.session.add(new_question)
+            db.session.flush() # Get the new_question.id
+
+            if new_question.question_type == 'multiple-choice':
+                # The frontend now sends a simple list of strings for answers.
+                for ans_data in q_data.get('answers', []):
+                    if ans_data: # Ensure the answer string is not empty
+                        new_answer = Answer(question_id=new_question.id, answer_text=ans_data)
+                        db.session.add(new_answer)
+
+        db.session.commit()
+        # Refresh the object to load the newly created relationships
+        db.session.refresh(new_test)
+        return jsonify(new_test.to_detailed_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating test: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
+
+
+@app.route('/api/tests', methods=['GET'])
+@login_required
+def get_tests():
+    """Fetches all tests created by the current user."""
+    tests = Test.query.filter_by(user_id=current_user.id).order_by(Test.created_at.desc()).all()
+    return jsonify([t.to_dict() for t in tests])
+
+
+@app.route('/api/tests/<int:test_id>', methods=['GET'])
+@login_required
+def get_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    if test.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify(test.to_detailed_dict())
+
+
+@app.route('/api/tests/<int:test_id>', methods=['PUT'])
+@login_required
+def update_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    if test.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid data"}), 400
+
+    try:
+        test.title = data['title']
+        test.test_type = data['test_type']
+
+        # Easiest way to handle question updates: delete old and create new
+        Question.query.filter_by(test_id=test.id).delete()
+        db.session.commit() # Commit the deletion before adding new questions
+
+        for q_data in data.get('questions', []):
+            new_question = Question(
+                test_id=test.id,
+                question_type=q_data['question_type'],
+                question_text=q_data['question_text'],
+                char_limit=q_data.get('char_limit')
+            )
+            db.session.add(new_question)
+            db.session.flush()
+
+            if new_question.question_type == 'multiple-choice':
+                # The frontend now sends a simple list of strings for answers.
+                for ans_data in q_data.get('answers', []):
+                    if ans_data: # Ensure the answer string is not empty
+                        new_answer = Answer(question_id=new_question.id, answer_text=ans_data)
+                        db.session.add(new_answer)
+
+        db.session.commit()
+        # Refresh the object to load the updated relationships
+        db.session.refresh(test)
+        return jsonify(test.to_detailed_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating test: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
+
+
+@app.route('/api/tests/<int:test_id>', methods=['DELETE'])
+@login_required
+def delete_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    if test.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        db.session.delete(test)
+        db.session.commit()
+        return jsonify({"message": "Test deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete test"}), 500
 
 # --- API Endpoints for Degree ---
 @app.route('/api/degrees', methods=['GET'])

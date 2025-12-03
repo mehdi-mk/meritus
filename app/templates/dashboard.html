@@ -248,7 +248,53 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <!-- Modal for Creating a Test (Questionnaire/Exam) -->
+    <div id="test-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Create New Test</h2>
+            <form id="test-form" class="modal-form">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label>Test Type</label>
+                    <div class="radio-group">
+                        <input type="radio" id="test-type-questionnaire" name="test_type" value="Questionnaire" checked>
+                        <label for="test-type-questionnaire">Questionnaire</label>
+                        <input type="radio" id="test-type-exam" name="test_type" value="Exam">
+                        <label for="test-type-exam">Exam</label>
+                    </div>
+                </div>
+
+                <!-- Fields for Questionnaire -->
+                <div id="questionnaire-fields" class="test-type-fields">
+                    <div class="form-group">
+                        <label for="test-title">Questionnaire Title</label>
+                        <input type="text" id="test-title" name="title" placeholder="e.g., Initial Screening Questions">
+                    </div>
+                    <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                        <h3>Questions</h3>
+                        <div id="questions-list" class="requirements-list" style="margin-top: 1rem;">
+                            <!-- Dynamic questions will be added here -->
+                        </div>
+                        <div class="form-actions" style="border-top: none; padding-top: 1rem; justify-content: flex-start;">
+                            <button type="button" class="btn btn-secondary add-question-btn" data-question-type="multiple-choice">Add Multiple-Choice</button>
+                            <button type="button" class="btn btn-secondary add-question-btn" data-question-type="descriptive">Add Descriptive</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fields for Exam (initially hidden) -->
+                <div id="exam-fields" class="test-type-fields" style="display: none;"></div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
 </body>
 </html>

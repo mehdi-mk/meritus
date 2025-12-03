@@ -2086,3 +2086,39 @@ h4 {
     font-size: 0.9rem;
     color: var(--text-secondary);
 }
+
+/* --- Test Creation Form Styles --- */
+.question-item {
+    background: var(--light-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.question-header label {
+    font-weight: 600;
+    margin: 0;
+}
+
+.mc-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-left: 1rem;
+}
+
+.mc-option-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+}
