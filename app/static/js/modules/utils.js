@@ -107,27 +107,92 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
             data.test_type = this.querySelector('[name="test_type"]:checked').value;
             data.questions = [];
 
+            // Clean up garbage keys from the flat formData extraction
+            delete data.question_text;
+            delete data.answer_text;
+            delete data.mc_option;
+            delete data.q_type;
+            delete data.char_limit;
+            // Also clean up correct answer radio group garbage if any exist in the flat data
+            Object.keys(data).forEach(key => {
+                if (key.startsWith('correct_answer_')) delete data[key];
+            });
+
+            let isValid = true;
+
             // Iterate over every question added to the DOM
-            this.querySelectorAll('.question-item').forEach(item => {
+            const questionItems = this.querySelectorAll('.question-item');
+            questionItems.forEach(item => {
+                // Clear previous errors
+                item.querySelectorAll('.error-text').forEach(el => el.style.display = 'none');
+
+                const qText = item.querySelector('[name="question_text"]').value.trim();
+                const qType = item.querySelector('[name="q_type"]').value; // 'M' or 'D'
+
                 let questionData = {
-                    question_text: item.querySelector('[name="question_text"]').value
+                    question_text: qText,
+                    question_type: qType
                 };
 
-                if (item.querySelector('.mc-options-list')) {
-                    // Logic for Multiple Choice Questions
-                    questionData.question_type = 'multiple-choice';
-                    // Extract option values and filter out empty inputs
-                    questionData.answers = Array.from(item.querySelectorAll('[name="mc_option"]'))
-                                         .map(input => input.value)
-                                         .filter(Boolean);
-                } else {
-                    // Logic for Descriptive Questions
-                    questionData.question_type = 'descriptive';
-                    const charLimit = item.querySelector('[name="char_limit"]').value;
-                    questionData.char_limit = parseInt(charLimit) || 500;
+                // 1. Validate Question Text
+                if (!qText) {
+                    item.querySelector('.question-input-group .error-text').style.display = 'block';
+                    isValid = false;
                 }
+
+                if (qType === 'M') {
+                    // Logic for Multiple Choice
+                    const optionItems = Array.from(item.querySelectorAll('.mc-option-item'));
+                    questionData.answers = optionItems.map(opt => {
+                        const textInput = opt.querySelector('input[name="mc_option"]');
+                        const radioInput = opt.querySelector('input[type="radio"]');
+                        return {
+                            answer_text: textInput ? textInput.value.trim() : '',
+                            is_correct: radioInput ? radioInput.checked : false
+                        };
+                    }).filter(ans => ans.answer_text !== '');
+
+                    // 2. Validate Options count
+                    if (questionData.answers.length < 2) {
+                        item.querySelector('.options-error').style.display = 'block';
+                        isValid = false;
+                    }
+
+                    // 3. Validate Correct Answer Selection
+                    const hasCorrectAnswer = questionData.answers.some(ans => ans.is_correct);
+                    if (!hasCorrectAnswer && questionData.answers.length >= 2) {
+                        const caError = item.querySelector('.correct-answer-error');
+                        if (caError) caError.style.display = 'block';
+                        isValid = false;
+                    } else {
+                         const caError = item.querySelector('.correct-answer-error');
+                         if (caError) caError.style.display = 'none';
+                    }
+                } else {
+                    // Logic for Descriptive
+                    const answerInput = item.querySelector('[name="answer_text"]');
+                    const answerText = answerInput ? answerInput.value.trim() : '';
+                    const charLimitInput = item.querySelector('[name="char_limit"]');
+                    const charLimit = charLimitInput ? charLimitInput.value : 1000;
+
+                    questionData.answer = answerText;
+                    questionData.char_limit = parseInt(charLimit) || 1000;
+
+                    // 3. Validate Answer Text
+                    if (!answerText) {
+                        // Find the error span next to the textarea
+                        item.querySelector('textarea + .error-text').style.display = 'block';
+                        isValid = false;
+                    }
+                }
+                console.log(questionData)
                 data.questions.push(questionData);
             });
+
+            if (!isValid) {
+                alert("Please fix the errors in the question form.");
+                return; // Stop submission
+            }
         }
 
         // --- 5. API Endpoint Construction ---

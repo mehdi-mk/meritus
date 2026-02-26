@@ -10,7 +10,7 @@ import {
 } from './modules/settings.js';
 import { loadJobContent } from './modules/jobs.js';
 import {
-    loadTests, deleteTest, openTestForEditing
+    loadTests, deleteTest, openTestForEditing, setupTestFormListeners
 } from './modules/interviews.js';
 import {
     loadAllApplications, showApplicantProfileModal, archiveApplication,
@@ -39,7 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Initialize Notifications
     initNotifications();
 
-    // 3. Setup Navigation
+    // 3. Initialize Test Form Logic
+    setupTestFormListeners();
+
+    // 4. Setup Navigation
     const contentLoaders = {
         'Home': loadHomeContent, // Defined below locally
         'Learning': () => dom.contentArea.innerHTML = '<h1>Learning</h1>',
@@ -167,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 4. Setup Modals
+    // 5. Setup Modals
     setupGenericForm(dom.modals.skill, () => fetchAndDisplay('skill', 'skill-list', createSkillHTML));
     setupGenericForm(dom.modals.experience, () => fetchAndDisplay('experience', 'experience-list', createExperienceHTML));
     setupGenericForm(dom.modals.certificate, () => fetchAndDisplay('certificate', 'certificate-list', createCertificateHTML));
@@ -218,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (event.target.name === 'test_type') {
                 const questionnaireFields = dom.modals.test.querySelector('#questionnaire-fields');
                 const examFields = dom.modals.test.querySelector('#exam-fields');
-                if (event.target.value === 'Questionnaire') {
+                if (event.target.value === 'Q') {
                     questionnaireFields.style.display = 'block';
                     examFields.style.display = 'none';
                 } else {
@@ -230,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // 5. Global Event Delegation
+    // 6. Global Event Delegation
     dom.contentArea.addEventListener('click', async function(event) {
 
         // Tile Expansion (UI)
@@ -256,14 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (privacyLabel) privacyLabel.textContent = 'Public';
                 form.querySelector('input[name="id"]').value = '';
                 modal.querySelector('h2').textContent = `Add New ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`;
-
-                // Note: loadProfileItemsForSkillForm is not exported from profile.js in my list above.
-                // You need to export it from profile.js and import it here if you want to use it.
-                // OR, cleaner: Import it and use it.
-                if (modalType === 'skill') {
-                     // import { loadProfileItemsForSkillForm } from './modules/profile.js';
-                     // await loadProfileItemsForSkillForm();
-                }
                 modal.classList.add('visible');
             }
             return;

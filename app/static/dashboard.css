@@ -2089,11 +2089,12 @@ h4 {
 
 /* --- Test Creation Form Styles --- */
 .question-item {
-    background: var(--light-color);
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
+    background-color: var(--white);
     border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .question-header {
@@ -2101,24 +2102,129 @@ h4 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--light-color);
 }
 
 .question-header label {
     font-weight: 600;
     margin: 0;
+    color: var(--primary-color);
 }
 
-.mc-options-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding-left: 1rem;
+.question-header .remove-question-btn {
+    background: transparent;
+    border: none;
+    color: var(--danger-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.question-header .remove-question-btn:hover {
+    color: var(--danger-hover);
+}
+
+.question-input-group {
+    margin-bottom: 1rem;
+}
+
+.question-input-group input[type="text"] {
+    width: 100%;
+}
+
+.question-input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+    color: var(--dark-color);
+}
+
+.question-input-group input[type="text"],
+.question-input-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+/* Validation Error Text */
+.error-text {
+    color: var(--danger-color);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: none; /* Hidden by default */
+}
+
+/* Multiple Choice Specifics */
+.mc-options-section {
+    background-color: var(--bg-primary);
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.mc-options-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
 .mc-option-item {
     display: flex;
-    align-items: center;
     gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
 }
+
+.mc-option-item input[type="text"] {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.remove-option-btn {
+    background-color: var(--danger-color);
+    color: var(--white);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.remove-option-btn:hover {
+    background-color: var(--danger-hover);
+}
+
+/* Descriptive Specifics */
+.char-limit-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.char-limit-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.char-limit-group input {
+    width: 120px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
 }

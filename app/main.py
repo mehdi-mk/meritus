@@ -464,9 +464,10 @@ class Test(db.Model):
     __tablename__ = 'tests'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    test_type = db.Column(db.String(50), nullable=False)  # 'Questionnaire' or 'Exam'
+    test_type = db.Column(db.String(1), nullable=False)  # 'Q' for Questionnaire, 'T' for Exam
     title = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    question_count = db.Column(db.Integer, default=0)
 
     questions = db.relationship('Question', backref='test', lazy=True, cascade="all, delete-orphan")
     user = db.relationship('User', backref='tests')
@@ -478,7 +479,7 @@ class Test(db.Model):
             'test_type': self.test_type,
             'title': self.title,
             'created_at': self.created_at.strftime('%B %d, %Y'),
-            'question_count': len(self.questions)
+            'question_count': self.question_count
         }
 
     def to_detailed_dict(self):
@@ -492,9 +493,10 @@ class Question(db.Model):
     __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)
     test_id = db.Column(db.Integer, db.ForeignKey('tests.id'), nullable=False)
-    question_type = db.Column(db.String(50), nullable=False)  # 'multiple-choice' or 'descriptive'
+    question_type = db.Column(db.String(1), nullable=False)  # 'M' for Multi-choice, 'D' for Descriptive
     question_text = db.Column(db.Text, nullable=False)
-    char_limit = db.Column(db.Integer, nullable=True) # For descriptive questions
+    answer = db.Column(db.Text, nullable=True)  # The correct answer provided by the employer
+    char_limit = db.Column(db.Integer, nullable=True) # For descriptive questions. NULL for Multi-choice
 
     # For multiple-choice questions
     answers = db.relationship('Answer', backref='question', lazy=True, cascade="all, delete-orphan")
@@ -505,6 +507,7 @@ class Question(db.Model):
             'test_id': self.test_id,
             'question_type': self.question_type,
             'question_text': self.question_text,
+            'answer': self.answer,
             'char_limit': self.char_limit,
             'answers': [a.to_dict() for a in self.answers]
         }
@@ -516,9 +519,14 @@ class Answer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
     answer_text = db.Column(db.Text, nullable=False)
+    is_correct = db.Column(db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
-        return {'id': self.id, 'answer_text': self.answer_text}
+        return {
+            'id': self.id,
+            'answer_text': self.answer_text,
+            'is_correct': self.is_correct
+        }
 
 
 @login_manager.user_loader
@@ -929,34 +937,69 @@ def create_test():
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
+    if data.get('test_type') not in ['Q', 'T']:
+        return jsonify({"error": "Invalid test type"}), 400
+
     try:
+        questions_data = data.get('questions', [])
         new_test = Test(
             user_id=current_user.id,
             test_type=data['test_type'],
-            title=data['title']
+            title=data['title'],
+            question_count=len(questions_data)
         )
         db.session.add(new_test)
-        db.session.flush()  # To get the new_test.id
+        db.session.flush()
 
-        for q_data in data.get('questions', []):
+        for q_data in questions_data:
+            # 1. Convert to Single Character
+            q_type_input = q_data['question_type']
+            if q_type_input == 'multiple-choice':
+                q_type = 'M'
+            elif q_type_input == 'descriptive':
+                q_type = 'D'
+            else:
+                q_type = q_type_input
+
+            # 2. Calculate Char Limit (NULL for Multi-choice)
+            char_limit = q_data.get('char_limit') if q_type == 'D' else None
+
+            # 3. Create Question Object
             new_question = Question(
                 test_id=new_test.id,
-                question_type=q_data['question_type'],
+                question_type=q_type,
                 question_text=q_data['question_text'],
-                char_limit=q_data.get('char_limit')
+                answer=q_data.get('answer'), # For descriptive questions
+                char_limit=char_limit
             )
             db.session.add(new_question)
-            db.session.flush() # Get the new_question.id
+            db.session.flush()
 
-            if new_question.question_type == 'multiple-choice':
-                # The frontend now sends a simple list of strings for answers.
-                for ans_data in q_data.get('answers', []):
-                    if ans_data: # Ensure the answer string is not empty
-                        new_answer = Answer(question_id=new_question.id, answer_text=ans_data)
+            if q_type == 'M':
+                answers_list = q_data.get('answers', [])
+                if len(answers_list) < 2:
+                    # Rollback if validation fails so we don't leave a half-created test
+                    db.session.rollback()
+                    return jsonify({"error": "Multiple-choice questions must have at least two options."}), 400
+
+                for ans_data in answers_list:
+                    # Handle both simple string (legacy) and dict (new) formats
+                    if isinstance(ans_data, dict):
+                        text = ans_data.get('answer_text')
+                        is_correct = ans_data.get('is_correct', False)
+                    else:
+                        text = ans_data
+                        is_correct = False
+                    
+                    if text:
+                        new_answer = Answer(
+                            question_id=new_question.id, 
+                            answer_text=text,
+                            is_correct=is_correct
+                        )
                         db.session.add(new_answer)
 
         db.session.commit()
-        # Refresh the object to load the newly created relationships
         db.session.refresh(new_test)
         return jsonify(new_test.to_detailed_dict()), 201
 
@@ -987,40 +1030,89 @@ def get_test(test_id):
 @login_required
 def update_test(test_id):
     test = Test.query.get_or_404(test_id)
+    # print("test = ", test.to_dict())
+    # print("test_id: ", test_id)
     if test.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
 
     data = request.get_json()
+    print("data = request.get_json():\n", data)
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
     try:
-        test.title = data['title']
-        test.test_type = data['test_type']
+        test.title = data.get('title', test.title)
+        print("test.title = ", test.title)
+        test.test_type = data.get('test_type', test.test_type)
+        print("test.test_type = ", test.test_type)
 
-        # Easiest way to handle question updates: delete old and create new
-        Question.query.filter_by(test_id=test.id).delete()
-        db.session.commit() # Commit the deletion before adding new questions
+        questions_data = data.get('questions')
+        print("questions_data = ", questions_data)
+        test.question_count = len(questions_data)
+        # print("question_count = ", test.question_count)
 
-        for q_data in data.get('questions', []):
+        # Delete old questions
+        old_questions = Question.query.filter_by(test_id=test.id).all()
+        for q in old_questions:
+            db.session.delete(q)
+        db.session.commit()
+
+        for q_data in questions_data:
+            # print("Got into the for loop!!")
+            # 1. Convert to Single Character
+            q_type_input = q_data['question_type']
+            if q_type_input == 'multiple-choice':
+                q_type = 'M'
+            elif q_type_input == 'descriptive':
+                q_type = 'D'
+            else:
+                q_type = q_type_input
+
+            # 2. Calculate Char Limit
+            char_limit = q_data.get('char_limit') if q_type == 'D' else None
+
+            # 3. Create Question Object
+            # !!! CRITICAL FIX BELOW !!!
+            # print("test_id: ", test_id)
+            # print("q_type: ", q_type)
+            # print("q_data['question_text']: ", q_data['question_text'])
+            # print("q_data['answer']: ", q_data['answer'])
+            # print("char_limit: ", char_limit)
             new_question = Question(
                 test_id=test.id,
-                question_type=q_data['question_type'],
+                question_type=q_type,  # Fix: Use 'q_type', NOT 'q_data["question_type"]'
                 question_text=q_data['question_text'],
-                char_limit=q_data.get('char_limit')
+                answer=q_data.get('answer'),
+                char_limit=char_limit  # Fix: Use 'char_limit' variable
             )
+            # print("new_question: ", new_question.to_dict())
             db.session.add(new_question)
             db.session.flush()
 
-            if new_question.question_type == 'multiple-choice':
-                # The frontend now sends a simple list of strings for answers.
-                for ans_data in q_data.get('answers', []):
-                    if ans_data: # Ensure the answer string is not empty
-                        new_answer = Answer(question_id=new_question.id, answer_text=ans_data)
+            if q_type == 'M':
+                answers_list = q_data.get('answers', [])
+                if len(answers_list) < 2:
+                    db.session.rollback()
+                    return jsonify({"error": "Multiple-choice questions must have at least two options."}), 400
+
+                for ans_data in answers_list:
+                    # Handle both simple string (legacy) and dict (new) formats
+                    if isinstance(ans_data, dict):
+                        text = ans_data.get('answer_text')
+                        is_correct = ans_data.get('is_correct', False)
+                    else:
+                        text = ans_data
+                        is_correct = False
+                        
+                    if text:
+                        new_answer = Answer(
+                            question_id=new_question.id, 
+                            answer_text=text,
+                            is_correct=is_correct
+                        )
                         db.session.add(new_answer)
 
         db.session.commit()
-        # Refresh the object to load the updated relationships
         db.session.refresh(test)
         return jsonify(test.to_detailed_dict()), 200
 
