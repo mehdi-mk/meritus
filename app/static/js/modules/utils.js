@@ -20,6 +20,10 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
     const form = modal.querySelector('.modal-form');
     if (!form) return;
 
+    // IMPORTANT: forms contain <input name="id">, which shadows the form's id attribute
+    // via the named-property getter. Always read the real id with getAttribute.
+    const formId = () => form.getAttribute('id');
+
     // --- 1. Helper: Close Modal & Reset State ---
     const closeModal = () => {
         // Hide the modal visually
@@ -33,8 +37,13 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
             }
 
             // Specific cleanup: Re-enable end-date input in case it was disabled by "I currently work here" checkbox
-            if (form.id === 'experience-form') {
+            if (formId() === 'experience-form') {
                 form.querySelector('#end-date').disabled = false;
+            }
+            // Clear dynamically added question blocks when closing the test modal
+            if (formId() === 'test-form') {
+                const questionsList = form.querySelector('#questions-list');
+                if (questionsList) questionsList.innerHTML = '';
             }
         }, 300);
     };
@@ -70,9 +79,11 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
         // Convert 'is_public' checkbox presence to a true/false boolean
         data.is_public = formData.has('is_public');
 
+        const currentFormId = this.getAttribute('id');
+
         // --- Special Case: Skill Form ---
         // Skills have a complex relationship structure (acquired_at_sources) that needs manual formatting
-        if (this.id === 'skill-form') {
+        if (currentFormId === 'skill-form') {
             const checkedSources = Array.from(this.querySelectorAll('#acquired-at-sources input[type="checkbox"]:checked'));
 
             // Validation: User must select at least one source
@@ -89,20 +100,20 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
         }
         // --- Special Case: Experience Form ---
         // Explicitly handle the 'is_present' checkbox boolean conversion
-        else if (this.id === 'experience-form') {
+        else if (currentFormId === 'experience-form') {
             data.is_present = formData.has('is_present');
         }
 
         // Redundant check for 'is_present', but ensures data integrity
-        if (this.id === 'experience-form') data.is_present = formData.has('is_present');
+        if (currentFormId === 'experience-form') data.is_present = formData.has('is_present');
 
         // --- Special Case: Account Settings ---
         // Remove email because it cannot be changed via this form
-        if (this.id === 'account-settings-form') delete data.email;
+        if (currentFormId === 'account-settings-form') delete data.email;
 
         // --- Special Case: Test/Exam Form ---
         // Complex parsing of dynamic question DOM elements into a nested JSON array
-        if (this.id === 'test-form') {
+        if (currentFormId === 'test-form') {
             data.title = this.querySelector('#test-title').value;
             data.test_type = this.querySelector('[name="test_type"]:checked').value;
             data.questions = [];
@@ -193,12 +204,17 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
                 alert("Please fix the errors in the question form.");
                 return; // Stop submission
             }
+
+            if (data.questions.length === 0) {
+                alert("Add at least one question before saving.");
+                return;
+            }
         }
 
         // --- 5. API Endpoint Construction ---
         let url, method;
 
-        if (this.id === 'account-settings-form') {
+        if (currentFormId === 'account-settings-form') {
             url = '/api/account';
             method = 'PUT';
         } else {
@@ -231,7 +247,7 @@ export function setupGenericForm(modal, onSuccessfulSubmit) {
                onSuccessfulSubmit();
             }
         } catch (error) {
-            console.error(`Form submission error for ${this.id}:`, error);
+            console.error(`Form submission error for ${currentFormId}:`, error);
             alert(error.message);
         }
     });

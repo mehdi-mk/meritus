@@ -2228,3 +2228,108 @@ h4 {
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
+
+/* --- Interview take / review styles --- */
+.submissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.submission-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--white);
+}
+
+.submission-detail {
+    margin-top: 1rem;
+}
+
+.review-question {
+    margin: 1.25rem 0;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.review-option {
+    padding: 0.45rem 0.7rem;
+    margin: 0.35rem 0;
+    border-radius: 4px;
+    background: #f8f9fa;
+}
+
+.review-option.selected {
+    border: 1px solid #0d6efd;
+    background: #e7f1ff;
+}
+
+.review-option.correct-key {
+    border: 1px solid #198754;
+}
+
+.review-response,
+.review-expected {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background: #f8f9fa;
+    white-space: pre-wrap;
+}
+
+.take-question {
+    margin: 1.25rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.take-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.take-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.take-option:hover {
+    background: #f8f9fa;
+}
+
+.take-question textarea {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    resize: vertical;
+}
+
+.char-counter {
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+}
+
+.job-seeker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}

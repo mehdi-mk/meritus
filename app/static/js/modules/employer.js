@@ -56,6 +56,7 @@ export function createJobHTML(job) {
                 <p>${salaryRange}</p>
                 <p>${job.employment_type || 'Employment type not specified'} • ${job.employment_arrangement || 'Arrangement not specified'}</p>
                 <p class="job-meta">Posted: ${job.created_at}</p>
+                ${job.has_interview ? `<p class="job-meta">Interview: ${job.interview_title || 'Questionnaire attached'}</p>` : ''}
             </div>
             <div class="job-actions">
                 <button class="btn btn-primary view-applications-btn" data-job-id="${job.id}">View Applications</button>
@@ -185,6 +186,17 @@ export function openJobPostingModal(jobId = null) {
                     </div>
                 </div>
 
+                <div class="form-section">
+                    <h3>Interview Questionnaire (optional)</h3>
+                    <div class="form-group">
+                        <label for="job-test-id">Attach a questionnaire from Interviews</label>
+                        <select id="job-test-id" name="test_id">
+                            <option value="">No interview</option>
+                        </select>
+                        <p class="job-meta">Create questionnaires under Hire → Interviews, then attach one here.</p>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">${isEditing ? 'Update Job' : 'Post Job'}</button>
                     <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
@@ -199,6 +211,30 @@ export function openJobPostingModal(jobId = null) {
     setupJobModal(modal, isEditing, jobId);
 
     modal.classList.add('visible');
+}
+
+async function populateJobTestDropdown(selectEl, selectedTestId = null) {
+    if (!selectEl) return;
+    try {
+        const response = await fetch('/api/tests');
+        if (!response.ok) return;
+        const tests = await response.json();
+        const questionnaires = tests.filter(t => t.test_type === 'Q');
+
+        // Keep the first "No interview" option; replace the rest
+        selectEl.innerHTML = '<option value="">No interview</option>';
+        questionnaires.forEach(test => {
+            const option = document.createElement('option');
+            option.value = test.id;
+            option.textContent = `${test.title} (${test.question_count} question${test.question_count === 1 ? '' : 's'})`;
+            selectEl.appendChild(option);
+        });
+        if (selectedTestId) {
+            selectEl.value = String(selectedTestId);
+        }
+    } catch (error) {
+        console.error('Error loading questionnaires for job form:', error);
+    }
 }
 
 // This function sets up the event listeners for the job posting modal.
@@ -234,10 +270,13 @@ export function setupJobModal(modal, isEditing, jobId) {
     // Form submission
     form.addEventListener('submit', handleJobSubmission);
 
-    // Load job data if editing
-    if (isEditing) {
-        loadJobForEditing(jobId, form);
-    }
+    // Load questionnaires, then job data if editing
+    (async () => {
+        await populateJobTestDropdown(form.querySelector('#job-test-id'));
+        if (isEditing) {
+            loadJobForEditing(jobId, form);
+        }
+    })();
 }
 
 // This function dynamically adds a new requirement input block (for skills, experience, etc.) to the job posting form.
@@ -417,6 +456,7 @@ export async function handleJobSubmission(e) {
         employment_type: formData.get('employment_type'),
         employment_arrangement: formData.get('employment_arrangement'),
         application_deadline: formData.get('application_deadline') || null,
+        test_id: formData.get('test_id') || null,
         required_skills: [],
         required_experiences: [],
         required_certificates: [],
@@ -474,7 +514,10 @@ export async function handleJobSubmission(e) {
             body: JSON.stringify(jobData)
         });
 
-        if (!response.ok) throw new Error('Failed to save job');
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to save job');
+        }
 
         // Close modal and refresh job list
         document.getElementById('job-posting-modal').remove();
@@ -482,7 +525,7 @@ export async function handleJobSubmission(e) {
 
     } catch (error) {
         console.error('Error saving job:', error);
-        alert('Failed to save job. Please try again.');
+        alert(error.message || 'Failed to save job. Please try again.');
     }
 }
 
@@ -507,6 +550,11 @@ export async function loadJobForEditing(jobId, form) {
         form.querySelector('[name="salary_min"]').value = job.salary_min || '';
         form.querySelector('[name="salary_max"]').value = job.salary_max || '';
         form.querySelector('[name="application_deadline"]').value = job.application_deadline || '';
+
+        const testSelect = form.querySelector('[name="test_id"]');
+        if (testSelect && job.test_id) {
+            testSelect.value = String(job.test_id);
+        }
 
         // Load requirements
         job.required_skills.forEach(skill => {

@@ -103,6 +103,7 @@ function createJobSeekerJobHTML(job) {
                 <span class="job-posted">Posted ${job.created_at}</span>
                 <div class="job-seeker-actions">
                     <button class="btn btn-secondary view-job-btn" data-job-id="${job.id}">View Details</button>
+                    ${createTakeInterviewButtonHTML(job, isEligible)}
                     <button class="btn ${applyButtonClass} apply-job-btn"
                             data-job-id="${job.id}"
                             ${applyButtonDisabled ? 'disabled' : ''}>
@@ -112,6 +113,29 @@ function createJobSeekerJobHTML(job) {
             </div>
         </div>
     `;
+}
+
+function createTakeInterviewButtonHTML(job, isEligible) {
+    if (!job.has_interview) return '';
+
+    if (job.interview_submitted) {
+        return `
+            <button class="btn btn-secondary take-interview-btn" data-job-id="${job.id}" disabled>
+                Interview Submitted
+            </button>`;
+    }
+
+    if (!isEligible) {
+        return `
+            <button class="btn btn-secondary take-interview-btn" data-job-id="${job.id}" disabled title="You must meet job requirements">
+                Take Interview
+            </button>`;
+    }
+
+    return `
+        <button class="btn btn-secondary take-interview-btn" data-job-id="${job.id}">
+            Take Interview
+        </button>`;
 }
 
 // This function fetches all job applications submitted by the current user.
@@ -390,6 +414,7 @@ function showJobDetailsModal(job) {
                 ` : ''}
 
                 <div class="job-actions">
+                    ${createTakeInterviewButtonHTML(job, job.user_eligible !== false)}
                     ${!job.user_applied ?
                         `<button class="btn btn-primary apply-job-btn" data-job-id="${job.id}">Apply Now</button>` :
                         `<span class="application-status status-${job.application_status}">Already Applied</span>`
@@ -409,6 +434,16 @@ function showJobDetailsModal(job) {
             const jobId = parseInt(applyBtnInModal.dataset.jobId);
             modal.remove(); // Close the current modal
             openApplicationModal(jobId); // Open the application modal
+        });
+    }
+
+    const interviewBtnInModal = modal.querySelector('.take-interview-btn:not([disabled])');
+    if (interviewBtnInModal) {
+        interviewBtnInModal.addEventListener('click', async () => {
+            const jobId = parseInt(interviewBtnInModal.dataset.jobId);
+            modal.remove();
+            const { openTakeInterviewModal } = await import('./interviews.js');
+            openTakeInterviewModal(jobId);
         });
     }
 

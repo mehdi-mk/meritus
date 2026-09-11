@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
 from sqlalchemy.sql import func
-from sqlalchemy import or_
+from sqlalchemy import or_, inspect as sa_inspect
 import enum
 # from .models import User, JobApplication
 
@@ -282,6 +282,8 @@ class JobPosting(db.Model):
     required_certificates = db.relationship('JobRequiredCertificate', backref='job', cascade="all, delete-orphan")
     required_degrees = db.relationship('JobRequiredDegree', backref='job', cascade="all, delete-orphan")
     applications = db.relationship('JobApplication', back_populates='job', lazy=True, cascade="all, delete-orphan")
+    test_id = db.Column(db.Integer, db.ForeignKey('tests.id', ondelete='SET NULL'), nullable=True)
+    test = db.relationship('Test', foreign_keys=[test_id])
 
     def to_dict(self):
         print("Executing to_dict on class JobPosting.")
@@ -302,7 +304,10 @@ class JobPosting(db.Model):
             'required_skills': [skill.to_dict() for skill in self.required_skills],
             'required_experiences': [exp.to_dict() for exp in self.required_experiences],
             'required_certificates': [cert.to_dict() for cert in self.required_certificates],
-            'required_degrees': [degree.to_dict() for degree in self.required_degrees]
+            'required_degrees': [degree.to_dict() for degree in self.required_degrees],
+            'test_id': self.test_id,
+            'has_interview': self.test_id is not None,
+            'interview_title': self.test.title if self.test else None
         }
 
 
@@ -467,9 +472,14 @@ class Test(db.Model):
     test_type = db.Column(db.String(1), nullable=False)  # 'Q' for Questionnaire, 'T' for Exam
     title = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    question_count = db.Column(db.Integer, default=0)
 
-    questions = db.relationship('Question', backref='test', lazy=True, cascade="all, delete-orphan")
+    questions = db.relationship(
+        'Question', backref='test', lazy=True,
+        cascade="all, delete-orphan", order_by='Question.position'
+    )
+    submissions = db.relationship(
+        'TestSubmission', backref='test', lazy=True, cascade="all, delete-orphan"
+    )
     user = db.relationship('User', backref='tests')
 
     def to_dict(self):
@@ -478,14 +488,23 @@ class Test(db.Model):
             'user_id': self.user_id,
             'test_type': self.test_type,
             'title': self.title,
-            'created_at': self.created_at.strftime('%B %d, %Y'),
-            'question_count': self.question_count
+            'created_at': self.created_at.strftime('%B %d, %Y') if self.created_at else None,
+            'question_count': len(self.questions),
+            'submission_count': len(self.submissions)
         }
 
     def to_detailed_dict(self):
         base_dict = self.to_dict()
         base_dict['questions'] = [q.to_dict() for q in self.questions]
         return base_dict
+
+    def to_seeker_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'test_type': self.test_type,
+            'questions': [q.to_seeker_dict() for q in self.questions]
+        }
 
 
 # Class #16
@@ -495,43 +514,327 @@ class Question(db.Model):
     test_id = db.Column(db.Integer, db.ForeignKey('tests.id'), nullable=False)
     question_type = db.Column(db.String(1), nullable=False)  # 'M' for Multi-choice, 'D' for Descriptive
     question_text = db.Column(db.Text, nullable=False)
-    answer = db.Column(db.Text, nullable=True)  # The correct answer provided by the employer
-    char_limit = db.Column(db.Integer, nullable=True) # For descriptive questions. NULL for Multi-choice
+    expected_answer = db.Column(db.Text, nullable=True)  # Hirer rubric for descriptive questions
+    char_limit = db.Column(db.Integer, nullable=True)
+    position = db.Column(db.Integer, nullable=False, default=0)
 
-    # For multiple-choice questions
-    answers = db.relationship('Answer', backref='question', lazy=True, cascade="all, delete-orphan")
+    options = db.relationship(
+        'QuestionOption', backref='question', lazy=True,
+        cascade="all, delete-orphan", order_by='QuestionOption.position'
+    )
 
     def to_dict(self):
+        option_dicts = [o.to_dict() for o in self.options]
         return {
             'id': self.id,
             'test_id': self.test_id,
             'question_type': self.question_type,
             'question_text': self.question_text,
-            'answer': self.answer,
+            'expected_answer': self.expected_answer,
+            'answer': self.expected_answer,  # alias used by the existing authoring form
             'char_limit': self.char_limit,
-            'answers': [a.to_dict() for a in self.answers]
+            'position': self.position,
+            'options': option_dicts,
+            'answers': option_dicts  # alias used by the existing authoring form
+        }
+
+    def to_seeker_dict(self):
+        return {
+            'id': self.id,
+            'question_type': self.question_type,
+            'question_text': self.question_text,
+            'char_limit': self.char_limit,
+            'position': self.position,
+            'options': [o.to_seeker_dict() for o in self.options]
         }
 
 
 # Class #17
-class Answer(db.Model):
-    __tablename__ = 'answers'
+class QuestionOption(db.Model):
+    __tablename__ = 'question_options'
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
-    answer_text = db.Column(db.Text, nullable=False)
+    option_text = db.Column(db.Text, nullable=False)
     is_correct = db.Column(db.Boolean, default=False, nullable=False)
+    position = db.Column(db.Integer, nullable=False, default=0)
 
     def to_dict(self):
         return {
             'id': self.id,
-            'answer_text': self.answer_text,
-            'is_correct': self.is_correct
+            'answer_text': self.option_text,
+            'option_text': self.option_text,
+            'is_correct': self.is_correct,
+            'position': self.position
         }
+
+    def to_seeker_dict(self):
+        return {
+            'id': self.id,
+            'option_text': self.option_text,
+            'position': self.position
+        }
+
+
+# Class #18
+class TestSubmission(db.Model):
+    __tablename__ = 'test_submissions'
+    __table_args__ = (
+        db.UniqueConstraint('test_id', 'job_id', 'user_id', name='uq_submission_test_job_user'),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    test_id = db.Column(db.Integer, db.ForeignKey('tests.id'), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    submitted_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+    job = db.relationship('JobPosting', backref='test_submissions')
+    submitter = db.relationship('User', backref='test_submissions')
+    answers = db.relationship(
+        'SubmissionAnswer', backref='submission', lazy=True, cascade="all, delete-orphan"
+    )
+
+    def to_list_dict(self):
+        name = ' '.join(filter(None, [self.submitter.first_name, self.submitter.last_name])).strip()
+        return {
+            'id': self.id,
+            'test_id': self.test_id,
+            'job_id': self.job_id,
+            'job_title': self.job.title if self.job else None,
+            'user_id': self.user_id,
+            'submitter_name': name or self.submitter.email,
+            'submitter_email': self.submitter.email,
+            'submitted_at': self.submitted_at.strftime('%B %d, %Y, %I:%M %p') if self.submitted_at else None
+        }
+
+    def to_detail_dict(self):
+        detail = self.to_list_dict()
+        detail['test_title'] = self.test.title
+        questions_by_id = {q.id: q for q in self.test.questions}
+        answers_by_qid = {a.question_id: a for a in self.answers}
+        detail['questions'] = []
+        for question in self.test.questions:
+            answer = answers_by_qid.get(question.id)
+            selected_option_id = answer.selected_option_id if answer else None
+            detail['questions'].append({
+                'id': question.id,
+                'question_type': question.question_type,
+                'question_text': question.question_text,
+                'expected_answer': question.expected_answer,
+                'char_limit': question.char_limit,
+                'options': [o.to_dict() for o in question.options],
+                'selected_option_id': selected_option_id,
+                'text_response': answer.text_response if answer else None
+            })
+        return detail
+
+
+# Class #19
+class SubmissionAnswer(db.Model):
+    __tablename__ = 'submission_answers'
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey('test_submissions.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    selected_option_id = db.Column(db.Integer, db.ForeignKey('question_options.id'), nullable=True)
+    text_response = db.Column(db.Text, nullable=True)
+
+    question = db.relationship('Question')
+    selected_option = db.relationship('QuestionOption')
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+def _normalize_question_type(q_type_input):
+    if q_type_input in ('multiple-choice', 'M'):
+        return 'M'
+    if q_type_input in ('descriptive', 'D'):
+        return 'D'
+    return q_type_input
+
+
+def _persist_questions(test, questions_data):
+    for existing in list(test.questions):
+        db.session.delete(existing)
+    db.session.flush()
+
+    for index, q_data in enumerate(questions_data or []):
+        q_type = _normalize_question_type(q_data.get('question_type'))
+        if q_type not in ('M', 'D'):
+            raise ValueError('Invalid question type.')
+
+        question_text = (q_data.get('question_text') or '').strip()
+        if not question_text:
+            raise ValueError('Question text cannot be empty.')
+
+        expected_answer = q_data.get('expected_answer')
+        if expected_answer is None:
+            expected_answer = q_data.get('answer')
+
+        char_limit = None
+        if q_type == 'D':
+            try:
+                char_limit = int(q_data.get('char_limit') or 1000)
+            except (TypeError, ValueError):
+                char_limit = 1000
+            if not (expected_answer or '').strip():
+                raise ValueError('Descriptive questions need an expected answer.')
+
+        new_question = Question(
+            test_id=test.id,
+            question_type=q_type,
+            question_text=question_text,
+            expected_answer=(expected_answer or '').strip() or None,
+            char_limit=char_limit,
+            position=index
+        )
+        db.session.add(new_question)
+        db.session.flush()
+
+        if q_type == 'M':
+            options_list = q_data.get('options') or q_data.get('answers') or []
+            parsed_options = []
+            for opt_index, ans_data in enumerate(options_list):
+                if isinstance(ans_data, dict):
+                    text = (ans_data.get('option_text') or ans_data.get('answer_text') or '').strip()
+                    is_correct = bool(ans_data.get('is_correct', False))
+                else:
+                    text = str(ans_data).strip()
+                    is_correct = False
+                if text:
+                    parsed_options.append((text, is_correct, opt_index))
+
+            if len(parsed_options) < 2:
+                raise ValueError('Multiple-choice questions must have at least two options.')
+            if not any(item[1] for item in parsed_options):
+                raise ValueError('Multiple-choice questions must have one correct option.')
+
+            for text, is_correct, opt_index in parsed_options:
+                db.session.add(QuestionOption(
+                    question_id=new_question.id,
+                    option_text=text,
+                    is_correct=is_correct,
+                    position=opt_index
+                ))
+
+
+def _assign_test_to_job(job, test_id):
+    if test_id in (None, '', 0, '0'):
+        job.test_id = None
+        return
+    test = Test.query.get(int(test_id))
+    if not test or test.user_id != current_user.id:
+        raise ValueError('Select a questionnaire you created.')
+    if test.test_type != 'Q':
+        raise ValueError('Only questionnaires can be attached to a job right now.')
+    job.test_id = test.id
+
+
+def _eligibility_profile(user_id):
+    user_skills = {(s.title.lower(), s.type.lower()) for s in Skill.query.filter_by(user_id=user_id)}
+    user_certificates = {(c.title.lower(), c.issuer.lower()) for c in
+                         Certificate.query.filter_by(user_id=user_id)}
+    user_experiences = Experience.query.filter_by(user_id=user_id).all()
+    user_degrees = Degree.query.filter_by(user_id=user_id).all()
+    total_experience_years = sum(
+        (exp.end_date.year - exp.start_date.year if exp.end_date else datetime.now().year - exp.start_date.year)
+        for exp in user_experiences
+    )
+    user_exp_tuples = {(e.position_title.lower(), e.country.lower() if e.country else "") for e in user_experiences}
+    degree_levels = {"High School": 1, "Associate's": 2, "Bachelor's": 3, "Master's": 4, "Doctoral": 5}
+    max_user_degree_level = max([degree_levels.get(d.degree.value, 0) for d in user_degrees], default=0)
+    return {
+        'user_skills': user_skills,
+        'user_certificates': user_certificates,
+        'total_experience_years': total_experience_years,
+        'user_exp_tuples': user_exp_tuples,
+        'degree_levels': degree_levels,
+        'max_user_degree_level': max_user_degree_level,
+    }
+
+
+def _is_eligible_for_job(job, profile):
+    is_eligible = True
+    degree_levels = profile['degree_levels']
+
+    if is_eligible and any(req.is_required for req in job.required_degrees):
+        required_level = max(
+            [degree_levels.get(req.degree_level, 99) for req in job.required_degrees if req.is_required],
+            default=0)
+        if profile['max_user_degree_level'] < required_level:
+            is_eligible = False
+
+    if is_eligible and any(req.is_required for req in job.required_skills):
+        for req in job.required_skills:
+            if not req.is_required:
+                continue
+            skill_found = False
+            for user_skill_title, _ in profile['user_skills']:
+                if req.title_match_type == 'exact' and req.skill_title.lower() == user_skill_title:
+                    skill_found = True
+                    break
+                elif req.title_match_type == 'including' and req.skill_title.lower() in user_skill_title:
+                    skill_found = True
+                    break
+            if not skill_found:
+                is_eligible = False
+                break
+
+    if is_eligible and any(req.is_required for req in job.required_certificates):
+        for req in job.required_certificates:
+            if not req.is_required:
+                continue
+            cert_found = False
+            for user_cert_title, user_cert_issuer in profile['user_certificates']:
+                title_match = (not req.certificate_title) or \
+                              (req.title_match_type == 'exact' and req.certificate_title.lower() == user_cert_title) or \
+                              (req.title_match_type == 'including' and req.certificate_title.lower() in user_cert_title)
+                issuer_match = (not req.issuer) or \
+                               (req.issuer_match_type == 'exact' and req.issuer.lower() == user_cert_issuer) or \
+                               (req.issuer_match_type == 'including' and req.issuer.lower() in user_cert_issuer)
+                if title_match and issuer_match:
+                    cert_found = True
+                    break
+            if not cert_found:
+                is_eligible = False
+                break
+
+    if is_eligible and any(req.is_required for req in job.required_experiences):
+        for req in job.required_experiences:
+            if not req.is_required:
+                continue
+            if profile['total_experience_years'] < req.years_required:
+                is_eligible = False
+                break
+            exp_content_found = False
+            for user_exp_title, user_exp_country in profile['user_exp_tuples']:
+                title_match = (not req.role_title) or \
+                              (req.role_title_match_type == 'exact' and req.role_title.lower() == user_exp_title) or \
+                              (req.role_title_match_type == 'including' and req.role_title.lower() in user_exp_title)
+                country_match = (not req.country) or \
+                                (req.country_match_type == 'exact' and req.country.lower() == user_exp_country) or \
+                                (req.country_match_type == 'including' and req.country.lower() in user_exp_country)
+                if title_match and country_match:
+                    exp_content_found = True
+                    break
+            if not exp_content_found:
+                is_eligible = False
+                break
+
+    return is_eligible
+
+
+def _can_take_job_interview(job):
+    if job.posted_by == current_user.id:
+        return False, 'You cannot take the interview for your own job posting.', 403
+    if job.status != 'active':
+        return False, 'This job is not accepting interviews.', 403
+    if not job.test_id:
+        return False, 'This job does not have an interview.', 404
+    if not _is_eligible_for_job(job, _eligibility_profile(current_user.id)):
+        return False, 'You are not eligible to take this interview.', 403
+    return True, None, None
 
 @app.route('/')
 def index():
@@ -937,72 +1240,37 @@ def create_test():
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
-    if data.get('test_type') not in ['Q', 'T']:
+    test_type = data.get('test_type')
+    if test_type == 'Exam':
+        test_type = 'T'
+    if test_type == 'T':
+        return jsonify({"error": "Exams are not available yet. Please create a Questionnaire."}), 400
+    if test_type != 'Q':
         return jsonify({"error": "Invalid test type"}), 400
 
+    title = (data.get('title') or '').strip()
+    if not title:
+        return jsonify({"error": "A title is required."}), 400
+
+    questions_data = data.get('questions', [])
+    if not questions_data:
+        return jsonify({"error": "Add at least one question."}), 400
+
     try:
-        questions_data = data.get('questions', [])
         new_test = Test(
             user_id=current_user.id,
-            test_type=data['test_type'],
-            title=data['title'],
-            question_count=len(questions_data)
+            test_type='Q',
+            title=title
         )
         db.session.add(new_test)
         db.session.flush()
-
-        for q_data in questions_data:
-            # 1. Convert to Single Character
-            q_type_input = q_data['question_type']
-            if q_type_input == 'multiple-choice':
-                q_type = 'M'
-            elif q_type_input == 'descriptive':
-                q_type = 'D'
-            else:
-                q_type = q_type_input
-
-            # 2. Calculate Char Limit (NULL for Multi-choice)
-            char_limit = q_data.get('char_limit') if q_type == 'D' else None
-
-            # 3. Create Question Object
-            new_question = Question(
-                test_id=new_test.id,
-                question_type=q_type,
-                question_text=q_data['question_text'],
-                answer=q_data.get('answer'), # For descriptive questions
-                char_limit=char_limit
-            )
-            db.session.add(new_question)
-            db.session.flush()
-
-            if q_type == 'M':
-                answers_list = q_data.get('answers', [])
-                if len(answers_list) < 2:
-                    # Rollback if validation fails so we don't leave a half-created test
-                    db.session.rollback()
-                    return jsonify({"error": "Multiple-choice questions must have at least two options."}), 400
-
-                for ans_data in answers_list:
-                    # Handle both simple string (legacy) and dict (new) formats
-                    if isinstance(ans_data, dict):
-                        text = ans_data.get('answer_text')
-                        is_correct = ans_data.get('is_correct', False)
-                    else:
-                        text = ans_data
-                        is_correct = False
-                    
-                    if text:
-                        new_answer = Answer(
-                            question_id=new_question.id, 
-                            answer_text=text,
-                            is_correct=is_correct
-                        )
-                        db.session.add(new_answer)
-
+        _persist_questions(new_test, questions_data)
         db.session.commit()
         db.session.refresh(new_test)
         return jsonify(new_test.to_detailed_dict()), 201
-
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         db.session.rollback()
         print(f"Error creating test: {e}")
@@ -1030,92 +1298,36 @@ def get_test(test_id):
 @login_required
 def update_test(test_id):
     test = Test.query.get_or_404(test_id)
-    # print("test = ", test.to_dict())
-    # print("test_id: ", test_id)
     if test.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
 
     data = request.get_json()
-    print("data = request.get_json():\n", data)
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
+    if test.submissions:
+        return jsonify({
+            "error": "This questionnaire already has submissions, so its questions cannot be edited."
+        }), 409
+
+    title = (data.get('title') or test.title or '').strip()
+    if not title:
+        return jsonify({"error": "A title is required."}), 400
+
+    questions_data = data.get('questions', [])
+    if not questions_data:
+        return jsonify({"error": "Add at least one question."}), 400
+
     try:
-        test.title = data.get('title', test.title)
-        print("test.title = ", test.title)
-        test.test_type = data.get('test_type', test.test_type)
-        print("test.test_type = ", test.test_type)
-
-        questions_data = data.get('questions')
-        print("questions_data = ", questions_data)
-        test.question_count = len(questions_data)
-        # print("question_count = ", test.question_count)
-
-        # Delete old questions
-        old_questions = Question.query.filter_by(test_id=test.id).all()
-        for q in old_questions:
-            db.session.delete(q)
-        db.session.commit()
-
-        for q_data in questions_data:
-            # print("Got into the for loop!!")
-            # 1. Convert to Single Character
-            q_type_input = q_data['question_type']
-            if q_type_input == 'multiple-choice':
-                q_type = 'M'
-            elif q_type_input == 'descriptive':
-                q_type = 'D'
-            else:
-                q_type = q_type_input
-
-            # 2. Calculate Char Limit
-            char_limit = q_data.get('char_limit') if q_type == 'D' else None
-
-            # 3. Create Question Object
-            # !!! CRITICAL FIX BELOW !!!
-            # print("test_id: ", test_id)
-            # print("q_type: ", q_type)
-            # print("q_data['question_text']: ", q_data['question_text'])
-            # print("q_data['answer']: ", q_data['answer'])
-            # print("char_limit: ", char_limit)
-            new_question = Question(
-                test_id=test.id,
-                question_type=q_type,  # Fix: Use 'q_type', NOT 'q_data["question_type"]'
-                question_text=q_data['question_text'],
-                answer=q_data.get('answer'),
-                char_limit=char_limit  # Fix: Use 'char_limit' variable
-            )
-            # print("new_question: ", new_question.to_dict())
-            db.session.add(new_question)
-            db.session.flush()
-
-            if q_type == 'M':
-                answers_list = q_data.get('answers', [])
-                if len(answers_list) < 2:
-                    db.session.rollback()
-                    return jsonify({"error": "Multiple-choice questions must have at least two options."}), 400
-
-                for ans_data in answers_list:
-                    # Handle both simple string (legacy) and dict (new) formats
-                    if isinstance(ans_data, dict):
-                        text = ans_data.get('answer_text')
-                        is_correct = ans_data.get('is_correct', False)
-                    else:
-                        text = ans_data
-                        is_correct = False
-                        
-                    if text:
-                        new_answer = Answer(
-                            question_id=new_question.id, 
-                            answer_text=text,
-                            is_correct=is_correct
-                        )
-                        db.session.add(new_answer)
-
+        test.title = title
+        test.test_type = 'Q'
+        _persist_questions(test, questions_data)
         db.session.commit()
         db.session.refresh(test)
         return jsonify(test.to_detailed_dict()), 200
-
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         db.session.rollback()
         print(f"Error updating test: {e}")
@@ -1129,6 +1341,11 @@ def delete_test(test_id):
     if test.user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403
 
+    if test.submissions:
+        return jsonify({
+            "error": "This questionnaire already has submissions and cannot be deleted."
+        }), 409
+
     try:
         db.session.delete(test)
         db.session.commit()
@@ -1136,6 +1353,129 @@ def delete_test(test_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Failed to delete test"}), 500
+
+
+@app.route('/api/tests/<int:test_id>/submissions', methods=['GET'])
+@login_required
+def get_test_submissions(test_id):
+    test = Test.query.get_or_404(test_id)
+    if test.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    submissions = TestSubmission.query.filter_by(test_id=test.id).order_by(
+        TestSubmission.submitted_at.desc()
+    ).all()
+    return jsonify({
+        'test': test.to_dict(),
+        'submissions': [s.to_list_dict() for s in submissions]
+    })
+
+
+@app.route('/api/submissions/<int:submission_id>', methods=['GET'])
+@login_required
+def get_submission(submission_id):
+    submission = TestSubmission.query.get_or_404(submission_id)
+    if submission.test.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify(submission.to_detail_dict())
+
+
+@app.route('/api/jobs/<int:job_id>/interview', methods=['GET'])
+@login_required
+def get_job_interview(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    allowed, error, status = _can_take_job_interview(job)
+    if not allowed:
+        return jsonify({"error": error}), status
+
+    existing = TestSubmission.query.filter_by(
+        test_id=job.test_id, job_id=job.id, user_id=current_user.id
+    ).first()
+    return jsonify({
+        'job_id': job.id,
+        'job_title': job.title,
+        'already_submitted': existing is not None,
+        'test': job.test.to_seeker_dict()
+    })
+
+
+@app.route('/api/jobs/<int:job_id>/interview/submit', methods=['POST'])
+@login_required
+def submit_job_interview(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    allowed, error, status = _can_take_job_interview(job)
+    if not allowed:
+        return jsonify({"error": error}), status
+
+    existing = TestSubmission.query.filter_by(
+        test_id=job.test_id, job_id=job.id, user_id=current_user.id
+    ).first()
+    if existing:
+        return jsonify({"error": "You have already submitted this interview."}), 409
+
+    data = request.get_json() or {}
+    answers_payload = data.get('answers') or []
+    answers_by_qid = {}
+    for item in answers_payload:
+        qid = item.get('question_id')
+        if qid is not None:
+            answers_by_qid[int(qid)] = item
+
+    test = job.test
+    try:
+        submission = TestSubmission(
+            test_id=test.id,
+            job_id=job.id,
+            user_id=current_user.id
+        )
+        db.session.add(submission)
+        db.session.flush()
+
+        for question in test.questions:
+            item = answers_by_qid.get(question.id)
+            if not item:
+                raise ValueError(f'Please answer: {question.question_text}')
+
+            if question.question_type == 'M':
+                selected_id = item.get('selected_option_id')
+                if not selected_id:
+                    raise ValueError(f'Please select an option for: {question.question_text}')
+                option = QuestionOption.query.get(int(selected_id))
+                if not option or option.question_id != question.id:
+                    raise ValueError('Invalid option selected.')
+                db.session.add(SubmissionAnswer(
+                    submission_id=submission.id,
+                    question_id=question.id,
+                    selected_option_id=option.id
+                ))
+            else:
+                text_response = (item.get('text_response') or '').strip()
+                if not text_response:
+                    raise ValueError(f'Please answer: {question.question_text}')
+                limit = question.char_limit or 1000
+                if len(text_response) > limit:
+                    raise ValueError(f'Answer is too long for: {question.question_text}')
+                db.session.add(SubmissionAnswer(
+                    submission_id=submission.id,
+                    question_id=question.id,
+                    text_response=text_response
+                ))
+
+        employer_notification = Notification(
+            user_id=job.posted_by,
+            title='Interview submitted',
+            message=f'A candidate submitted the interview for "{job.title}".',
+            link=url_for('dashboard', _external=True)
+        )
+        db.session.add(employer_notification)
+        db.session.commit()
+        return jsonify({'message': 'Interview submitted successfully.', 'submission_id': submission.id}), 201
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error submitting interview: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 # --- API Endpoints for Degree ---
 @app.route('/api/degrees', methods=['GET'])
@@ -1306,9 +1646,14 @@ def create_job():
             )
             db.session.add(job_degree)
 
+        _assign_test_to_job(new_job, data.get('test_id'))
+
         db.session.commit()
         return jsonify(new_job.to_dict()), 201
 
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
@@ -1373,6 +1718,11 @@ def browse_jobs():
         user_applied_job_ids = {app.job_id for app in
                                 JobApplication.query.filter_by(user_id=current_user.id).with_entities(
                                     JobApplication.job_id).all()}
+        user_submitted_interview_job_ids = {
+            s.job_id for s in TestSubmission.query.filter_by(user_id=current_user.id).with_entities(
+                TestSubmission.job_id
+            ).all()
+        }
 
         # 5. PERFORM ELIGIBILITY CHECK FOR EACH JOB
         for job in all_jobs:
@@ -1456,6 +1806,7 @@ def browse_jobs():
                 job_dict = job.to_dict()
                 job_dict['user_applied'] = job.id in user_applied_job_ids
                 job_dict['user_eligible'] = is_eligible
+                job_dict['interview_submitted'] = job.id in user_submitted_interview_job_ids
                 job_list.append(job_dict)
 
         return jsonify(job_list), 200
@@ -1550,9 +1901,15 @@ def update_job(job_id):
             )
             db.session.add(job_degree)
 
+        if 'test_id' in data:
+            _assign_test_to_job(job, data.get('test_id'))
+
         db.session.commit()
         return jsonify(job.to_dict())
 
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500

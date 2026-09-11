@@ -10,7 +10,8 @@ import {
 } from './modules/settings.js';
 import { loadJobContent } from './modules/jobs.js';
 import {
-    loadTests, deleteTest, openTestForEditing, setupTestFormListeners
+    loadTests, deleteTest, openTestForEditing, setupTestFormListeners,
+    openTestSubmissions, openTakeInterviewModal
 } from './modules/interviews.js';
 import {
     loadAllApplications, showApplicantProfileModal, archiveApplication,
@@ -309,6 +310,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        if (event.target.closest('.view-submissions-btn')) {
+            openTestSubmissions(event.target.closest('.view-submissions-btn').dataset.testId);
+            return;
+        }
+
         if (event.target.closest('.delete-test-btn')) {
             const testId = event.target.closest('.delete-test-btn').dataset.testId;
             state.itemToDelete = { id: testId, type: 'test' };
@@ -372,6 +378,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target.closest('.apply-job-btn')) {
             const jobId = parseInt(event.target.closest('.apply-job-btn').dataset.jobId);
             openApplicationModal(jobId);
+            return;
+        }
+
+        if (event.target.closest('.take-interview-btn')) {
+            const btn = event.target.closest('.take-interview-btn');
+            if (btn.disabled) return;
+            openTakeInterviewModal(parseInt(btn.dataset.jobId));
             return;
         }
 
